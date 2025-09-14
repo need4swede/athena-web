@@ -1,0 +1,33 @@
+# Use Node.js as base image
+FROM node:20-alpine AS build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy the rest of the application
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production stage - use unprivileged nginx image
+FROM nginxinc/nginx-unprivileged:alpine
+
+# Copy the build output from the previous stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration for non-root user
+COPY nginx/nginx-nonroot.conf /etc/nginx/conf.d/default.conf
+
+# The unprivileged image already runs on port 8080 by default
+# But we'll expose our custom port
+EXPOSE 6464
+
+# The unprivileged image already has the correct user and permissions set up
+# No need to specify CMD as it's inherited from the base image

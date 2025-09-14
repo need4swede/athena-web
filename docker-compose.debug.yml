@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: ${TZ}
+      PGTZ: ${TZ}
+    ports:
+      - "5433:5432"
+    volumes:
+      - athena_db:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.debug
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    volumes:
+      - ./server/src:/app/src
+      - ./athena:/app/athena
+      - ./files:/app/files
+      - ./public:/app/public
+    environment:
+      - TZ=America/Los_Angeles
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${BACKEND_PORT}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - SSO_MICROSOFT_CLIENT_ID=${SSO_MICROSOFT_CLIENT_ID}
+      - SSO_MICROSOFT_CLIENT_SECRET=${SSO_MICROSOFT_CLIENT_SECRET}
+      - SSO_MICROSOFT_TENANT_ID=${SSO_MICROSOFT_TENANT_ID}
+      - SSO_GOOGLE_CLIENT_ID=${SSO_GOOGLE_CLIENT_ID}
+      - SSO_GOOGLE_CLIENT_SECRET=${SSO_GOOGLE_CLIENT_SECRET}
+      - SSO_GITHUB_CLIENT_ID=${SSO_GITHUB_CLIENT_ID}
+      - SSO_GITHUB_CLIENT_SECRET=${SSO_GITHUB_CLIENT_SECRET}
+      - SSO_LINKEDIN_CLIENT_ID=${SSO_LINKEDIN_CLIENT_ID}
+      - SSO_LINKEDIN_CLIENT_SECRET=${SSO_LINKEDIN_CLIENT_SECRET}
+      - SSO_TWITTER_CLIENT_ID=${SSO_TWITTER_CLIENT_ID}
+      - SSO_TWITTER_CLIENT_SECRET=${SSO_TWITTER_CLIENT_SECRET}
+      - SSO_ALLOWED_DOMAINS=${SSO_ALLOWED_DOMAINS}
+      - SSO_ALLOWED_EMAILS=${SSO_ALLOWED_EMAILS}
+      - PYTHONPATH=/app
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/athena/api/google_api/key.json
+      - DEBUG=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # Increased logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  athena:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    volumes:
+      - ./src:/app/src
+      - ./files:/app/files
+    user: "36464:36464"
+    environment:
+      - TZ=${TZ}
+      - NODE_ENV=${NODE_ENV}
+      - VITE_API_URL=${VITE_API_URL}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  athena_db: {}

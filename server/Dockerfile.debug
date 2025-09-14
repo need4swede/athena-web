@@ -1,0 +1,91 @@
+FROM node:20-alpine
+
+# Add debugging info
+RUN echo "=== DEBUG: Starting build on $(date) ==="
+RUN echo "=== DEBUG: Architecture: $(uname -m) ==="
+RUN echo "=== DEBUG: Node version: $(node --version) ==="
+
+# Install Python, pip, and build dependencies
+RUN echo "=== DEBUG: Installing Python and dependencies ===" && \
+    apk add --no-cache python3 py3-pip py3-virtualenv gcc musl-dev python3-dev libffi-dev openssl-dev && \
+    echo "=== DEBUG: Python installed: $(python3 --version) ==="
+
+# Set working directory
+WORKDIR /app
+RUN echo "=== DEBUG: Working directory set to /app ==="
+
+# Copy package files
+COPY package*.json ./
+RUN echo "=== DEBUG: Package files copied ===" && \
+    ls -la package*.json
+
+# Install dependencies
+RUN echo "=== DEBUG: Installing npm dependencies ===" && \
+    npm ci --only=production && \
+    echo "=== DEBUG: npm dependencies installed ==="
+
+# Copy source code
+COPY . .
+RUN echo "=== DEBUG: All files copied ===" && \
+    echo "=== DEBUG: Directory contents:" && \
+    ls -la
+
+# Create and activate a virtual environment
+RUN echo "=== DEBUG: Creating Python virtual environment ===" && \
+    python3 -m venv /app/venv && \
+    echo "=== DEBUG: Virtual environment created ==="
+ENV PATH="/app/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/app/venv"
+
+# Install Python dependencies
+RUN echo "=== DEBUG: Installing Python packages ===" && \
+    pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib psycopg2-binary requests && \
+    echo "=== DEBUG: Python packages installed ==="
+
+# Build the TypeScript code
+RUN echo "=== DEBUG: Building TypeScript ===" && \
+    npm run build && \
+    echo "=== DEBUG: TypeScript built successfully ===" && \
+    echo "=== DEBUG: dist directory contents:" && \
+    ls -la dist/
+
+# Make the entrypoint script executable
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    echo "=== DEBUG: Entrypoint script made executable ==="
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    echo "=== DEBUG: nodejs user created ==="
+
+# Change ownership of the app directory
+RUN chown -R nodejs:nodejs /app && \
+    echo "=== DEBUG: Ownership changed to nodejs user ==="
+
+# Expose port
+EXPOSE 36464
+
+# Add a simple startup script for debugging
+RUN echo '#!/bin/sh' > /app/debug-start.sh && \
+    echo 'echo "=== DEBUG: Container started at $(date) ==="' >> /app/debug-start.sh && \
+    echo 'echo "=== DEBUG: Environment variables:"' >> /app/debug-start.sh && \
+    echo 'env | sort' >> /app/debug-start.sh && \
+    echo 'echo "=== DEBUG: Current user: $(whoami) (UID: $(id -u))"' >> /app/debug-start.sh && \
+    echo 'echo "=== DEBUG: Working directory: $(pwd)"' >> /app/debug-start.sh && \
+    echo 'echo "=== DEBUG: Directory contents:"' >> /app/debug-start.sh && \
+    echo 'ls -la' >> /app/debug-start.sh && \
+    echo 'echo "=== DEBUG: Starting entrypoint script ==="' >> /app/debug-start.sh && \
+    echo 'exec docker-entrypoint.sh "$@"' >> /app/debug-start.sh && \
+    chmod +x /app/debug-start.sh
+
+# Debug healthcheck - just check if node is available
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD echo "=== HEALTHCHECK: Running ===" && node --version || exit 1
+
+# Set the entrypoint to our debug script
+ENTRYPOINT ["/app/debug-start.sh"]
+
+# Start the server
+CMD ["npm", "start"]

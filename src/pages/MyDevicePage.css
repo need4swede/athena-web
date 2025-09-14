@@ -1,0 +1,1272 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --background-start-rgb: 249, 250, 251;
+    /* gray-50 */
+    --background-end-rgb: 243, 244, 246;
+    /* gray-100 */
+    --card-background-rgb: 255, 255, 255;
+    --text-primary-rgb: 17, 24, 39;
+    /* gray-900 */
+    --text-secondary-rgb: 107, 114, 128;
+    /* gray-500 */
+    --accent-rgb: 0, 122, 255;
+    --border-rgb: 229, 231, 235;
+    /* gray-200 */
+    --error-rgb: 239, 68, 68;
+    /* red-500 */
+}
+
+.my-device-page {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, rgb(var(--background-start-rgb)), rgb(var(--background-end-rgb)));
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.login-card,
+.device-info-card {
+    width: 100%;
+    max-width: 500px;
+    background-color: rgba(var(--card-background-rgb), 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    border: 1px solid rgba(var(--border-rgb), 0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transform: scale(0.95);
+    opacity: 0;
+    animation: fadeInScaleUp 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+.device-info-card {
+    max-width: 600px;
+}
+
+@keyframes fadeInScaleUp {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.card-header {
+    padding: 2rem;
+    padding-bottom: 0;
+    text-align: center;
+}
+
+.card-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: rgb(var(--text-primary-rgb));
+    margin: 0;
+}
+
+.card-description {
+    font-size: 1rem;
+    color: rgb(var(--text-secondary-rgb));
+    margin-top: 0.5rem;
+}
+
+.card-content {
+    padding: 2rem;
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 0.5em
+}
+
+.input-group {
+    position: relative;
+    margin: 1.5em 0;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgb(var(--text-secondary-rgb));
+    pointer-events: none;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 1px solid rgb(var(--border-rgb));
+    border-radius: 12px;
+    font-size: 1rem;
+    background-color: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: rgba(var(--accent-rgb), 0.8);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.submit-button {
+    width: 100%;
+    padding: 0.875rem;
+    border: none;
+    border-radius: 12px;
+    background-color: rgb(var(--accent-rgb));
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    margin-top: 1em;
+}
+
+.submit-button:hover {
+    background-color: rgba(var(--accent-rgb), 0.9);
+}
+
+.submit-button:active {
+    transform: scale(0.98);
+}
+
+.submit-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: rgb(var(--error-rgb));
+    font-size: 0.875rem;
+    text-align: center;
+    margin: -0.5rem 0 0.5rem;
+}
+
+/* Device Info Styles */
+.info-section {
+    border-top: 1px solid rgba(var(--border-rgb), .5);
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.info-section:first-child {
+    border-top: none;
+    padding-top: 2em;
+    padding-bottom: 0;
+}
+
+.info-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: rgb(var(--text-primary-rgb));
+    margin-bottom: 1rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    color: rgb(var(--text-primary-rgb));
+}
+
+.info-item .icon {
+    color: rgb(var(--text-secondary-rgb));
+}
+
+.action-button {
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    border: 1px solid transparent;
+}
+
+.primary-action {
+    background-color: rgb(var(--accent-rgb));
+    color: white;
+}
+
+.primary-action:hover {
+    background-color: rgba(var(--accent-rgb), 0.9);
+}
+
+.secondary-action {
+    background-color: transparent;
+    color: rgb(var(--accent-rgb));
+    border-color: rgb(var(--accent-rgb));
+}
+
+.secondary-action:hover {
+    background-color: rgba(var(--accent-rgb), 0.05);
+}
+
+
+/* Loading Spinner */
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #FFF;
+    border-bottom-color: rgb(var(--accent-rgb));
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* Responsive Design */
+@media (min-width: 640px) {
+    .info-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Enhanced Modal Styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid rgba(var(--border-rgb), 0.5);
+}
+
+.modal-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: rgb(var(--text-primary-rgb));
+    margin: 0;
+}
+
+.modal-description {
+    color: rgb(var(--text-secondary-rgb));
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.modal-body-split {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.agreement-viewer {
+    background: #f8f9fa;
+    border-right: 1px solid rgba(var(--border-rgb), 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.signature-section {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    overflow-y: auto;
+}
+
+.modal-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: rgb(var(--text-primary-rgb));
+}
+
+.insurance-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.insurance-button {
+    padding: 1.25rem;
+    border: 2px solid rgb(var(--border-rgb));
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background: white;
+}
+
+.insurance-button:hover {
+    background-color: #f9fafb;
+    transform: translateY(-2px);
+}
+
+.insurance-button.selected {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.insurance-button.not-insured.selected {
+    border-color: rgb(var(--error-rgb));
+    color: rgb(var(--error-rgb));
+    background-color: rgba(var(--error-rgb), 0.05);
+}
+
+.insurance-button.insured.selected {
+    border-color: #16a34a;
+    color: #16a34a;
+    background-color: rgba(22, 163, 74, 0.05);
+}
+
+.insurance-button svg {
+    width: 24px;
+    height: 24px;
+}
+
+.insurance-button span {
+    font-weight: 500;
+}
+
+.signature-pad-container {
+    border: 2px solid rgb(var(--border-rgb));
+    border-radius: 16px;
+    overflow: hidden;
+    height: 200px;
+    background: white;
+}
+
+.modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(var(--border-rgb), 0.5);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    background: white;
+}
+
+/* PDF Viewer Styles */
+.pdf-viewer-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+.pdf-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: white;
+}
+
+.pdf-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-bottom: 1px solid rgba(var(--border-rgb), 0.5);
+    gap: 1rem;
+}
+
+.pdf-toolbar-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: rgb(var(--text-primary-rgb));
+}
+
+.pdf-toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pdf-toolbar-button {
+    padding: 0.5rem;
+    min-width: 36px;
+    height: 36px;
+}
+
+.pdf-document-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+
+.pdf-loading-container,
+.pdf-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    gap: 1rem;
+}
+
+.pdf-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid rgb(var(--accent-rgb));
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.pdf-loading-text,
+.pdf-error-text {
+    color: rgb(var(--text-secondary-rgb));
+    font-size: 0.95rem;
+}
+
+.pdf-error-text {
+    color: rgb(var(--error-rgb));
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .modal-content {
+        max-width: 100%;
+        max-height: 100vh;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .modal-overlay {
+        padding: 0;
+    }
+
+    .modal-header {
+        padding: 1.5rem 1.5rem 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+    }
+
+    .modal-body-split {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+    }
+
+    .agreement-viewer {
+        border-right: none;
+        border-bottom: 1px solid rgba(var(--border-rgb), 0.5);
+        min-height: 40vh;
+    }
+
+    .card-header {
+        display: none;
+    }
+
+    .signature-section {
+        padding: 1.5rem;
+        max-height: 50vh;
+    }
+
+    .insurance-options {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+    }
+
+    .modal-footer button {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .pdf-toolbar {
+        padding: 0.5rem;
+    }
+
+    .pdf-toolbar-title {
+        font-size: 0.875rem;
+    }
+
+    .pdf-document-container {
+        padding: 0;
+    }
+
+    .signature-pad-container {
+        height: 150px;
+    }
+
+    /* Enhanced mobile button styling */
+    .submit-button {
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 0.875rem 1.5rem;
+        border-radius: 12px;
+        touch-action: manipulation;
+    }
+
+    .action-button {
+        min-height: 48px;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 0.875rem 1.5rem;
+        touch-action: manipulation;
+    }
+}
+
+/* TOS Modal Styles */
+.modal-overlay-tos {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 2rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content-tos {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 1100px;
+    height: 90vh;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+.modal-header-tos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-rgb);
+    flex-shrink: 0;
+}
+
+.modal-title-tos {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-close-button-tos {
+    color: var(--text-secondary-rgb);
+}
+
+.pdf-viewer-tos {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.signature-workflow-tos {
+    flex-shrink: 0;
+    background: #f8fafc;
+    border-left: 1px solid var(--border-rgb);
+    padding: 1.5rem;
+    transition: all 0.3s ease-in-out;
+    width: 400px;
+}
+
+/* Insurance Selection */
+.insurance-selection-tos {
+    text-align: center;
+}
+
+.insurance-title-tos {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.insurance-options-tos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.insurance-button-tos {
+    padding: 1.25rem;
+    border: 2px solid rgb(var(--border-rgb));
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background: white;
+}
+
+.insurance-button-tos:hover {
+    background-color: #f9fafb;
+    transform: translateY(-2px);
+}
+
+.insurance-button-tos.selected {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.insurance-button-tos.not-insured.selected {
+    border-color: rgb(var(--error-rgb));
+    color: rgb(var(--error-rgb));
+    background-color: rgba(var(--error-rgb), 0.05);
+}
+
+.insurance-button-tos.insured.selected {
+    border-color: #16a34a;
+    color: #16a34a;
+    background-color: rgba(22, 163, 74, 0.05);
+}
+
+.insurance-button-tos svg {
+    width: 24px;
+    height: 24px;
+}
+
+.insurance-button-tos span {
+    font-weight: 500;
+}
+
+/* Prompt to Sign */
+.prompt-to-sign-tos {
+    text-align: center;
+    padding: 1.5rem;
+    background: #eef2ff;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #c7d2fe;
+    margin-top: 1.5rem;
+}
+
+.prompt-to-sign-tos:hover {
+    background: #e0e7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.prompt-title-tos {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4338ca;
+}
+
+.prompt-description-tos {
+    margin: 0.25rem 0 0.5rem;
+    color: #4f46e5;
+}
+
+.prompt-action-tos {
+    font-weight: 600;
+    color: #4f46e5;
+    text-decoration: underline;
+}
+
+/* Signature Capture */
+.signature-capture-tos {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.signature-header-tos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.signature-title-tos {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.signature-pad-container-tos {
+    border: 2px solid var(--border-rgb);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 180px;
+    background: white;
+}
+
+.signature-footer-tos {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.signature-footer-tos button {
+    min-height: 48px;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+.signature-footer-tos button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.signature-footer-tos button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+    .modal-overlay-tos {
+        padding: 0;
+    }
+
+    .modal-content-tos {
+        flex-direction: column;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .signature-workflow-tos {
+        display: none;
+    }
+
+    .mobile-actions-footer {
+        position: fixed;
+        bottom: 140px;
+        left: 16px;
+        right: 16px;
+        background: #fff;
+        padding: 1.25rem;
+        border-radius: 20px;
+        border: 1px solid rgba(var(--border-rgb), 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        z-index: 110;
+        backdrop-filter: blur(10px);
+        background-color: rgba(255, 255, 255, 0.95);
+        /* Safe area padding for devices with home indicators */
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .insurance-selection-mobile .insurance-title-mobile {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+
+    .insurance-options-mobile {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .insurance-button-mobile {
+        padding: 1rem;
+        border: 2px solid var(--border-rgb);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        background: #fff;
+        font-weight: 500;
+        min-height: 56px;
+        font-size: 0.95rem;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .insurance-button-mobile:hover {
+        background-color: #f9fafb;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .insurance-button-mobile:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .insurance-button-mobile.not-insured.selected {
+        border-color: rgb(var(--error-rgb));
+        color: rgb(var(--error-rgb));
+        background-color: rgba(var(--error-rgb), 0.05);
+    }
+
+    .insurance-button-mobile.insured.selected {
+        border-color: #16a34a;
+        color: #16a34a;
+        background-color: rgba(22, 163, 74, 0.05);
+    }
+
+    .prompt-to-sign-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .prompt-description {
+        font-size: 0.9rem;
+        text-align: center;
+        color: rgb(var(--text-secondary-rgb));
+    }
+
+    .prompt-to-sign-mobile button {
+        width: 100%;
+        min-height: 52px;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        background-color: rgb(var(--accent-rgb));
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .prompt-to-sign-mobile button:hover {
+        background-color: rgba(var(--accent-rgb), 0.9);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
+    }
+
+    .prompt-to-sign-mobile button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.2);
+    }
+
+    .signature-modal-mobile {
+        position: fixed;
+        bottom: 20px;
+        left: 16px;
+        right: 16px;
+        background: #fff;
+        padding: 1.5rem;
+        border-radius: 24px;
+        border: 1px solid rgba(var(--border-rgb), 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        transform: translateY(calc(100% + 40px));
+        transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        z-index: 120;
+        backdrop-filter: blur(10px);
+        background-color: rgba(255, 255, 255, 0.95);
+        /* Safe area padding for devices with home indicators */
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .modal-content-tos.show-signature .signature-modal-mobile {
+        transform: translateY(0);
+    }
+
+    .modal-content-tos.show-signature .mobile-actions-footer {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-title {
+        font-size: 1.25rem;
+    }
+
+    .modal-description {
+        font-size: 0.875rem;
+    }
+
+    .pdf-toolbar-button {
+        min-width: 32px;
+        height: 32px;
+        padding: 0.25rem;
+    }
+
+}
+
+/* Enhanced PDF.js Viewer Styles */
+.pdf-document-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1rem;
+    overflow: auto;
+    height: 100%;
+    background: #f5f5f5;
+}
+
+.pdf-document {
+    display: flex;
+    justify-content: center;
+}
+
+.pdf-page {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    margin: 0 auto;
+}
+
+.pdf-page canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.pdf-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.pdf-page-info {
+    font-size: 0.875rem;
+    color: rgb(var(--text-secondary-rgb));
+    margin-left: 1rem;
+}
+
+.pdf-zoom-display {
+    min-width: 60px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Mobile PDF Navigation */
+.pdf-mobile-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid rgba(var(--border-rgb), 0.5);
+    gap: 1rem;
+}
+
+.pdf-mobile-page-info {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(var(--text-primary-rgb));
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Mobile-specific PDF adjustments */
+@media (max-width: 768px) {
+    .pdf-document-wrapper {
+        padding: 0.5rem;
+    }
+
+    .pdf-page {
+        margin: 0;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .pdf-toolbar {
+        padding: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .pdf-toolbar-section {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .pdf-page-info {
+        margin-left: 0;
+        margin-top: 0.25rem;
+        order: 3;
+        flex-basis: 100%;
+        text-align: center;
+    }
+
+    .pdf-toolbar-button {
+        min-width: 36px;
+        height: 36px;
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pdf-mobile-nav {
+        padding: 0.75rem;
+    }
+
+    .pdf-mobile-nav button {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .pdf-mobile-page-info {
+        font-size: 0.8rem;
+    }
+
+    .pdf-toolbar-title {
+        font-size: 0.875rem;
+    }
+}
+
+/* React-PDF specific styles */
+.react-pdf__Document {
+    display: flex;
+    justify-content: center;
+}
+
+.react-pdf__Page {
+    position: relative;
+}
+
+.react-pdf__Page__canvas {
+    max-width: 100%;
+    height: auto !important;
+    width: auto !important;
+}
+
+/* Touch-friendly mobile interactions */
+@media (max-width: 768px) {
+    .pdf-document-container {
+        touch-action: pan-x pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .pdf-page canvas {
+        touch-action: pan-x pan-y;
+    }
+
+    /* Mobile-specific PDF viewer fixes for modal */
+    .modal-content-tos .pdf-viewer-tos {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 1;
+    }
+
+    .modal-content-tos .pdf-viewer-wrapper {
+        height: 100%;
+        min-height: 0;
+        flex: 1;
+        position: relative;
+    }
+
+    .modal-content-tos .pdf-document-container {
+        height: 100%;
+        min-height: 0;
+        position: relative;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-content-tos .pdf-document-wrapper {
+        min-height: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 0.5rem;
+    }
+
+    .modal-content-tos .pdf-page {
+        max-width: 100%;
+        height: auto !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-content-tos .pdf-page canvas {
+        max-width: 100% !important;
+        height: auto !important;
+        width: auto !important;
+    }
+
+    /* Ensure proper rendering in mobile Safari */
+    .modal-content-tos .react-pdf__Document {
+        width: 100%;
+    }
+
+    .modal-content-tos .react-pdf__Page {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Fix for mobile modal z-index issues */
+    .modal-overlay-tos {
+        z-index: 9999;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .modal-content-tos {
+        z-index: 10000;
+        position: relative;
+    }
+
+    /* Additional mobile Safari fixes */
+    .modal-content-tos .pdf-viewer-wrapper {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+
+    .modal-content-tos .pdf-document-container {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: transform;
+    }
+
+    /* Force hardware acceleration for mobile */
+    .modal-content-tos .react-pdf__Page__canvas {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+
+    /* Ensure proper stacking context */
+    .modal-content-tos .pdf-loading-overlay {
+        z-index: 1;
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Mobile viewport fixes */
+    .modal-overlay-tos {
+        -webkit-overflow-scrolling: touch;
+        overflow: hidden;
+    }
+
+    /* Prevent zoom on double tap */
+    .modal-content-tos .pdf-page canvas {
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+}

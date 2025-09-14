@@ -1,0 +1,119 @@
+{
+    "providers": {
+        "google": {
+            "enabled": false,
+            "displayName": "Google",
+            "clientId": "mock_google_client_id",
+            "clientSecret": "mock_google_client_secret",
+            "buttonText": "Sign in with Google",
+            "logo": {
+                "enabled": true,
+                "iconName": "Mail",
+                "centerText": false
+            }
+        },
+        "github": {
+            "enabled": false,
+            "displayName": "GitHub",
+            "clientId": "mock_github_client_id",
+            "clientSecret": "mock_github_client_secret",
+            "buttonText": "Sign in with GitHub",
+            "logo": {
+                "enabled": true,
+                "iconName": "Github",
+                "centerText": false
+            }
+        },
+        "microsoft": {
+            "enabled": true,
+            "displayName": "Microsoft",
+            "clientId": "bbddf21d-a184-41e3-b0f6-b18949d51710",
+            "clientSecret": "0vx8Q~xb4qFrcqyYbu4wqhKAOAfrtPaXRPn4GcZk",
+            "tenantId": "organizations",
+            "buttonText": "Sign-in with your District email",
+            "logo": {
+                "enabled": true,
+                "iconName": "Mail",
+                "centerText": false
+            }
+        },
+        "linkedin": {
+            "enabled": false,
+            "displayName": "LinkedIn",
+            "clientId": "",
+            "clientSecret": "",
+            "buttonText": "Sign in with LinkedIn",
+            "logo": {
+                "enabled": true,
+                "iconName": "Linkedin",
+                "centerText": false
+            }
+        },
+        "twitter": {
+            "enabled": false,
+            "displayName": "Twitter",
+            "clientId": "",
+            "clientSecret": "",
+            "buttonText": "Sign in with Twitter",
+            "logo": {
+                "enabled": true,
+                "iconName": "Twitter",
+                "centerText": false
+            }
+        },
+        "custom_email": {
+            "enabled": false,
+            "displayName": "Email Login",
+            "clientId": "email_provider",
+            "clientSecret": "",
+            "buttonText": "Sign in with Email",
+            "logo": {
+                "enabled": false,
+                "centerText": true
+            }
+        },
+        "custom_logo_example": {
+            "enabled": false,
+            "displayName": "Custom Logo Provider",
+            "clientId": "custom_provider",
+            "clientSecret": "",
+            "buttonText": "Sign in with Custom Provider",
+            "logo": {
+                "enabled": true,
+                "iconName": "custom",
+                "customUrl": "https://example.com/logo.png",
+                "centerText": false
+            }
+        }
+    },
+    "accessControl": {
+        "domainMode": "allow-all",
+        "emailMode": "allow-all",
+        "allowedDomains": [],
+        "blockedDomains": [],
+        "allowedEmails": [],
+        "blockedEmails": [],
+        "requireEmailVerification": true
+    },
+    "branding": {
+        "companyName": "Athena",
+        "logoUrl": "https://njesd.b-cdn.net/photos/apps/athena/logo.png",
+        "primaryColor": "#2563eb",
+        "loginTitle": "Athena",
+        "loginSubtitle": "Asset & Directory Service for Education",
+        "customCss": ".h-16 { height: 8rem !important; } .shadow-xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; }",
+        "footer": "Secured via Heimdall SSO"
+    },
+    "features": {
+        "enableEmailLogin": false,
+        "enableRememberMe": true,
+        "sessionTimeout": 604800,
+        "allowSelfRegistration": true
+    },
+    "security": {
+        "requireHttps": false,
+        "enableRateLimit": true,
+        "maxLoginAttempts": 5,
+        "lockoutDuration": 900
+    }
+}

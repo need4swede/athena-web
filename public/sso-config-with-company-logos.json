@@ -1,0 +1,100 @@
+{
+    "providers": {
+        "google": {
+            "enabled": false,
+            "displayName": "Google",
+            "clientId": "your_google_client_id",
+            "clientSecret": "your_google_client_secret",
+            "buttonText": "Continue with Google",
+            "logo": {
+                "enabled": true,
+                "iconName": "custom",
+                "customUrl": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3LjY0IDkuMjA0NTVDMTcuNjQgOC41NjY0MSAxNy41ODY0IDcuOTUyNzMgMTcuNDkwOSA3LjM2MzY0SDlWMTAuODQ1NUgxMy44NDU1QzEzLjYzNSAxMS45NyAxMy4wMDA5IDEyLjkyMjMgMTIuMDQ3NyAxMy41NjE0VjE1Ljg5NTVIMTQuOTU2OEMxNi42NTg2IDE0LjM0MDkgMTcuNjQgMTEuOTk1NSAxNy42NCA5LjIwNDU1WiIgZmlsbD0iIzQyODVGNCIvPgo8cGF0aCBkPSJNOSAxOC4wMDAxQzExLjQzIDE4LjAwMDEgMTMuNDY3NyAxNy4xOTQxIDE0Ljk1NjggMTUuODk1NUwxMi4wNDc3IDEzLjU2MTRDMTEuMjQxOCAxNC4xMDE0IDEwLjIxMDkgMTQuNDIwNSA5IDE0LjQyMDVDNi42NTkwOSAxNC40MjA1IDQuNjcyNzMgMTIuODM3MyAzLjk2NDA5IDEwLjcxSDEuMDU2ODJWMTMuMDQxOEMyLjU1MjI3IDE1Ljk4MzIgNS41NTM2NCAxOC4wMDAxIDkgMTguMDAwMVoiIGZpbGw9IiMzNEE4NTMiLz4KPHBhdGggZD0iTTMuOTY0MDkgMTAuNzFDMy43ODQwOSAxMC4xNyAzLjY4MTgyIDkuNTkzMTggMy42ODE4MiA5QzMuNjgxODIgOC40MDY4MiAzLjc4NDA5IDcuODMgMy45NjQwOSA3LjI5VjQuOTU4MThIMS4wNTY4MkMwLjM4NDA5MSA2LjI5MzE4IDAgNy41OTMxOCAwIDlDMCAxMC40MDY4IDAuMzg0MDkxIDExLjcwNjggMS4wNTY4MiAxMy4wNDE4TDMuOTY0MDkgMTAuNzFaIiBmaWxsPSIjRkJCQzA1Ii8+CjxwYXRoIGQ9Ik05IDMuNTc5NTVDMTAuMzIxNCAzLjU3OTU1IDExLjUwNzcgNC4wMzM2NCAxMi40NDA1IDQuOTI1NDVMMTUuMDIxNCAyLjM0NDU1QzEzLjQ2MzIgMC44OTE4MTggMTEuNDI1OSAwIDkgMEM1LjU1MzY0IDAgMi41NTIyNyAyLjAxNjgyIDEuMDU2ODIgNC45NTgxOEwzLjk2NDA5IDcuMjlDNC42NzI3MyA1LjE2MjczIDYuNjU5MDkgMy41Nzk1NSA5IDMuNTc5NTVaIiBmaWxsPSIjRUE0MzM1Ii8+Cjwvc3ZnPgo=",
+                "centerText": false
+            }
+        },
+        "github": {
+            "enabled": false,
+            "displayName": "GitHub",
+            "clientId": "your_github_client_id",
+            "clientSecret": "your_github_client_secret",
+            "buttonText": "Continue with GitHub",
+            "logo": {
+                "enabled": true,
+                "iconName": "custom",
+                "customUrl": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9IiMxODE3MTciIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0yMDguMzEgNzUuNjhBNTkuNzggNTkuNzggMCAwIDAgMTgwLjMyIDQ3LjY4YTU5Ljc4IDU5Ljc4IDAgMCAwLTI4LTI4QTU5Ljc4IDU5Ljc4IDAgMCAwIDEyOCAwYTU5Ljc4IDU5Ljc4IDAgMCAwLTI0LjMyIDUuNjhhNTkuNzggNTkuNzggMCAwIDAtMjggMjhBNTkuNzggNTkuNzggMCAwIDAgNzUuNjggNzUuNjhhNTkuNzggNTkuNzggMCAwIDAtNS42OCAyNC4zMmMwIDI2LjUxIDEwLjg2IDQ5LjQ0IDI4LjEyIDY2LjIyYTEwOS44NyAxMDkuODcgMCAwIDAgMjkuODggMjMuNzFjMS4yNC0uNCAyLjI4LTIuNTEgMi4yOC00Ljc1VjE2NS4xOGMwLTUuNTEtMS44OC0xMC4yMi00Ljg0LTE0LjEtMi45Ni0zLjg4LTcuMTItNi4zNS0xMS44NC03LjI2bC0xLjU2LS4zMWMtMy4yNy0uNjUtNi4wOC0yLjA1LTguNDQtNC4yMmE0NC4wNSA0NC4wNSAwIDAgMS0xMS4zNC0xNi4xMiA0NC4wNSA0NC4wNSAwIDAgMS0yLjU2LTE4LjMxYzAtNi4wNiAxLjU2LTExLjcyIDQuNjgtMTYuNjlhNDQuMDUgNDQuMDUgMCAwIDEgMTIuNTYtMTMuMjJjMi4yNy0xLjc2IDQuOTItMi45NCA3Ljk0LTMuNTJhNDQuMDUgNDQuMDUgMCAwIDEgMTguMzEgMGM2LjA2IDEuMjQgMTEuNzIgMy42NCAxNi42OSA3LjJhNDQuMDUgNDQuMDUgMCAwIDEgMTMuMjIgMTIuNTZjMS43NiAyLjI3IDIuOTQgNC45MiAzLjUyIDcuOTRhNDQuMDUgNDQuMDUgMCAwIDEgMCAxOC4zMWMtMS4yNCA2LjA2LTMuNjQgMTEuNzItNy4yIDE2LjY5YTQ0LjA1IDQ0LjA1IDAgMCAxLTEyLjU2IDEzLjIyYy0yLjI3IDEuNzYtNC45MiAyLjk0LTcuOTQgMy41MmwtMS41Ni4zMWMtNC43Mi45MS04Ljg4IDMuMzgtMTEuODQgNy4yNi0yLjk2IDMuODgtNC44NCA4LjU5LTQuODQgMTQuMXYxOS4xNGMwIDIuMjQgMS4wNCA0LjM1IDIuMjggNC43NWExMDkuODcgMTA5Ljg3IDAgMCAwIDI5Ljg4LTIzLjcxYzE3LjI2LTE2Ljc4IDI4LjEyLTM5LjcxIDI4LjEyLTY2LjIyQTU5Ljc4IDU5Ljc4IDAgMCAwIDIwOC4zMSA3NS42OFoiLz48L3N2Zz4=",
+                "centerText": false
+            }
+        },
+        "microsoft": {
+            "enabled": true,
+            "displayName": "Microsoft",
+            "clientId": "bbddf21d-a184-41e3-b0f6-b18949d51710",
+            "clientSecret": "0vx8Q~xb4qFrcqyYbu4wqhKAOAfrtPaXRPn4GcZk",
+            "tenantId": "organizations",
+            "buttonText": "Sign-in with your District email",
+            "logo": {
+                "enabled": true,
+                "iconName": "custom",
+                "customUrl": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjEiIGhlaWdodD0iMjEiIHZpZXdCb3g9IjAgMCAyMSAyMSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjRjI1MDIyIi8+CjxyZWN0IHg9IjExIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiM3RkJBMDAiLz4KPHJlY3QgeT0iMTEiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwQTRFRiIvPgo8cmVjdCB4PSIxMSIgeT0iMTEiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI0ZGQjkwMCIvPgo8L3N2Zz4K",
+                "centerText": false
+            }
+        },
+        "linkedin": {
+            "enabled": false,
+            "displayName": "LinkedIn",
+            "clientId": "your_linkedin_client_id",
+            "clientSecret": "your_linkedin_client_secret",
+            "buttonText": "Continue with LinkedIn",
+            "logo": {
+                "enabled": true,
+                "iconName": "custom",
+                "customUrl": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwNzZCMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIwLjQ0NyAyMC40NTJoLTMuNTU0di01LjU2OWMwLTEuMzI4LS4wMjctMy4wMzctMS44NTItMy4wMzctMS44NTMgMC0yLjEzNiAxLjQ0NS0yLjEzNiAyLjkzOXY1LjY2N0g5LjM1MVY5aDMuNDE0djEuNTYxaC4wNDZjLjQ3Ny0uOSAxLjYzNy0xLjg1IDMuMzctMS44NSAzLjYwMSAwIDQuMjY3IDIuMzcgNC4yNjcgNS40NTV2Ni4yODZ6TTUuMzM3IDcuNDMzYy0xLjE0NCAwLTIuMDYzLS45MjYtMi4wNjMtMi4wNjVzLjkyLTIuMDYzIDIuMDYzLTIuMDYzIDIuMDY1LjkyNCAyLjA2NSAyLjA2M2MwIDEuMTM5LS45MjEgMi4wNjUtMi4wNjUgMi4wNjV6bTEuNzgyIDEzLjAxOUgzLjU1NVY5aDMuNTY0djExLjQ1MnpNMjIuMjI1IDBIMS43NzFDLjc5MiAwIDAgLjc3NCAwIDEuNzI5djIwLjU0MkMwIDIzLjIyNy43OTIgMjQgMS43NzEgMjRoMjAuNDUxQzIzLjIgMjQgMjQgMjMuMjI3IDI0IDIyLjI3MVYxLjcyOUMyNCAuNzc0IDIzLjIgMCAyMi4yMjIgMGguMDAzeiIvPgo8L3N2Zz4K",
+                "centerText": false
+            }
+        },
+        "twitter": {
+            "enabled": false,
+            "displayName": "X (Twitter)",
+            "clientId": "your_twitter_client_id",
+            "clientSecret": "your_twitter_client_secret",
+            "buttonText": "Continue with X",
+            "logo": {
+                "enabled": true,
+                "iconName": "custom",
+                "customUrl": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwMDAwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE4LjI0NCAyLjI1aDMuMzA4bC03LjIyNyA4LjI2IDguNTAyIDExLjI0SDE2LjE3bC01LjIxNC02LjgxN0w0Ljk5IDIxLjc1SDAuNjgybDcuNzMtOC44MzVMLjI1IDIuMjVoOC4wOGw0LjcxMyA2LjIzMXptLTEuMTYxIDE3LjUyaDEuODMzTDUuNzcgNC4xMjZINC4xMTd6Ii8+Cjwvc3ZnPgo=",
+                "centerText": false
+            }
+        }
+    },
+    "accessControl": {
+        "domainMode": "allow-all",
+        "emailMode": "allow-all",
+        "allowedDomains": [],
+        "blockedDomains": [],
+        "allowedEmails": [],
+        "blockedEmails": [],
+        "requireEmailVerification": true
+    },
+    "branding": {
+        "companyName": "Athena",
+        "logoUrl": "https://njesd.b-cdn.net/photos/apps/athena/logo.png",
+        "primaryColor": "#2563eb",
+        "loginTitle": "Athena",
+        "loginSubtitle": "Asset & Directory Service for Education",
+        "customCss": ".h-16 { height: 8rem !important; } .shadow-xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; }",
+        "footer": "Secured via Heimdall SSO"
+    },
+    "features": {
+        "enableEmailLogin": false,
+        "enableRememberMe": true,
+        "sessionTimeout": 604800,
+        "allowSelfRegistration": true
+    },
+    "security": {
+        "requireHttps": false,
+        "enableRateLimit": true,
+        "maxLoginAttempts": 5,
+        "lockoutDuration": 900
+    }
+}
