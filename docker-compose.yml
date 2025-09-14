@@ -81,6 +81,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_BASE_URL=${VITE_BASE_URL}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     #user: "36464:36464"
