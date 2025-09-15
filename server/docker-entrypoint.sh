@@ -68,28 +68,60 @@ except ImportError as e:
     print(f'❌ Import error: {e}')
 "
 
-# Check Google API credentials
-echo "🐍 [DEBUG] Checking Google API credentials..."
-echo "🐍 [DEBUG] GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
-if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-    if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-        echo "✅ Google API credentials file exists at $GOOGLE_APPLICATION_CREDENTIALS"
-    else
-        echo "❌ Google API credentials file not found at $GOOGLE_APPLICATION_CREDENTIALS"
-    fi
-else
-    echo "❌ GOOGLE_APPLICATION_CREDENTIALS environment variable not set"
+# Prepare Google API credentials (support new env-based setup)
+echo "🐍 [DEBUG] Preparing Google API credentials..."
+KEY_JSON_PATH="/app/athena/api/google_api/key.json"
+
+# 1) If GOOGLE_SERVICE_ACCOUNT_JSON is provided, write it to key.json
+if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+    echo "📄 Writing GOOGLE_SERVICE_ACCOUNT_JSON to $KEY_JSON_PATH"
+    mkdir -p "$(dirname "$KEY_JSON_PATH")"
+    printf "%s" "$GOOGLE_SERVICE_ACCOUNT_JSON" > "$KEY_JSON_PATH" || true
+    export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
 fi
 
-# Check if key.json exists in the expected location
-KEY_JSON_PATH="/app/athena/api/google_api/key.json"
-if [ -f "$KEY_JSON_PATH" ]; then
-    echo "✅ key.json file exists at $KEY_JSON_PATH"
-    # Ensure the file is readable
-    chmod 644 "$KEY_JSON_PATH" 2>/dev/null || echo "⚠️ Could not change permissions on key.json (this is usually fine)"
-    echo "✅ Set permissions on key.json"
+# 2) If GOOGLE_SERVICE_ACCOUNT_FILE is provided
+if [ -n "$GOOGLE_SERVICE_ACCOUNT_FILE" ] && [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+    case "$GOOGLE_SERVICE_ACCOUNT_FILE" in
+        http://*|https://*)
+            echo "🌐 Fetching GOOGLE_SERVICE_ACCOUNT_FILE from URL"
+            python3 - <<PY || true
+import json,sys,os
+import urllib.request
+url=os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE')
+dest=os.environ.get('KEY_JSON_PATH','/app/athena/api/google_api/key.json')
+os.makedirs(os.path.dirname(dest), exist_ok=True)
+with urllib.request.urlopen(url, timeout=15) as r:
+    data=r.read().decode('utf-8')
+    # Basic validation
+    json.loads(data)
+    with open(dest,'w',encoding='utf-8') as f:
+        f.write(data)
+print('Downloaded service account key to', dest)
+PY
+            if [ -f "$KEY_JSON_PATH" ]; then
+                export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
+            fi
+            ;;
+        *)
+            if [ -f "$GOOGLE_SERVICE_ACCOUNT_FILE" ]; then
+                export GOOGLE_APPLICATION_CREDENTIALS="$GOOGLE_SERVICE_ACCOUNT_FILE"
+            fi
+            ;;
+    esac
+fi
+
+# Final diagnostics
+echo "🐍 [DEBUG] GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
+if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+    echo "✅ Google API credentials file ready at $GOOGLE_APPLICATION_CREDENTIALS"
 else
-    echo "❌ key.json file not found at $KEY_JSON_PATH"
+    echo "⚠️ Google API credentials not resolved via env; falling back to legacy key.json if present"
+    if [ -f "$KEY_JSON_PATH" ]; then
+        echo "✅ Found legacy key.json at $KEY_JSON_PATH"
+    else
+        echo "⚠️ No legacy key.json at $KEY_JSON_PATH"
+    fi
 fi
 
 # Start the application
