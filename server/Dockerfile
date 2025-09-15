@@ -25,14 +25,20 @@ USER nodejs
 # Set working directory
 WORKDIR /app
 
-# Copy package files with correct ownership
-COPY --chown=nodejs:nodejs package*.json ./
+# Copy backend package files with correct ownership
+COPY --chown=nodejs:nodejs server/package*.json ./
 
 # Install dependencies as nodejs user
 RUN npm ci
 
-# Copy source code with correct ownership
-COPY --chown=nodejs:nodejs . .
+# Copy backend source code with correct ownership
+COPY --chown=nodejs:nodejs server/. .
+
+# Bake Athena (Python modules and scripts) into the image
+COPY --chown=nodejs:nodejs athena /app/athena
+
+# Ensure public exists (may still be mounted via compose in dev)
+COPY --chown=nodejs:nodejs public /app/public
 
 # Create and activate a virtual environment as nodejs user
 RUN python3 -m venv /app/venv
@@ -47,7 +53,7 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 RUN npm run build
 
 # Copy and make the entrypoint script executable (with correct ownership)
-COPY --chown=nodejs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY --chown=nodejs:nodejs server/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
 # Expose port

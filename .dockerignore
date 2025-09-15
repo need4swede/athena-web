@@ -25,8 +25,7 @@ dist
 dist-ssr
 
 # Large or server-only directories
-server/
-athena/
+# Keep server/ and athena/ included so backend image can bake them
 database/
 files/
 athena_old_but_working/

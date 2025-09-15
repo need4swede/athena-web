@@ -21,13 +21,12 @@ services:
 
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     volumes:
       - ./server/src:/app/src
-      - ./athena:/app/athena
       - ./files:/app/files
       - ./database:/app/database
       - ./public:/app/public
