@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../database';
+import { getJwtSecretUnsafe } from '../utils/jwt';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+const JWT_SECRET = getJwtSecretUnsafe();
 
 export interface AuthenticatedRequest extends Request {
     user?: {
