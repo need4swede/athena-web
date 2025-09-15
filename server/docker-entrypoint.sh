@@ -195,6 +195,8 @@ print('Downloaded Aeries account key to', dest)
 PY
             # Consume EXPORT lines to set env in this shell
             if [ -f "$AERIES_KEY_JSON_PATH" ]; then
+                # Point AERIES_ACCOUNT_FILE to the downloaded local file to avoid re-fetching
+                export AERIES_ACCOUNT_FILE="$AERIES_KEY_JSON_PATH"
                 # Read back endpoint/key if printed
                 AE_EP=$(python3 - <<'PY'
 import json,os
