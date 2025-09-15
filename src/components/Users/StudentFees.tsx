@@ -40,6 +40,7 @@ const StudentFees: React.FC<StudentFeesProps> = ({ studentId, studentName, stude
     const [archivedPayments, setArchivedPayments] = useState<any[]>([]);
     const [archivedOpen, setArchivedOpen] = useState(false);
     const [archivedLoading, setArchivedLoading] = useState(false);
+    const [reactivating, setReactivating] = useState<{[id:number]: boolean}>({});
 
     // Super Admin: Delete a payment (transaction) with custom confirmation dialog
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; paymentId?: number }>({ open: false });
@@ -461,6 +462,9 @@ const StudentFees: React.FC<StudentFeesProps> = ({ studentId, studentName, stude
                                             <TableHead>Payment Date</TableHead>
                                             <TableHead>Archived</TableHead>
                                             <TableHead>Notes</TableHead>
+                                            {(userRole === 'super-admin') && (
+                                                <TableHead>Actions</TableHead>
+                                            )}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -480,6 +484,44 @@ const StudentFees: React.FC<StudentFeesProps> = ({ studentId, studentName, stude
                                                 <TableCell>{ap.created_at ? format(new Date(ap.created_at), 'MMM d, yyyy') : '—'}</TableCell>
                                                 <TableCell>{ap.archived_at ? format(new Date(ap.archived_at), 'MMM d, yyyy') : '—'}</TableCell>
                                                 <TableCell>{ap.notes || '—'}</TableCell>
+                                                {(userRole === 'super-admin') && (
+                                                    <TableCell>
+                                                        {ap.is_invalidated ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                disabled={!!reactivating[ap.id]}
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        setReactivating(prev => ({...prev, [ap.id]: true}));
+                                                                        const resp = await fetch(`/api/students/${studentId}/reactivate-credit`, {
+                                                                            method: 'POST',
+                                                                            headers: {
+                                                                                'Content-Type': 'application/json',
+                                                                                ...(token && { 'Authorization': `Bearer ${token}` }),
+                                                                            },
+                                                                            body: JSON.stringify({ creditId: ap.id })
+                                                                        });
+                                                                        if (!resp.ok) {
+                                                                            const e = await resp.json().catch(() => ({} as any));
+                                                                            throw new Error(e.error || 'Failed to reactivate credit');
+                                                                        }
+                                                                        toast({ title: 'Success', description: 'Credit reactivated. It can be used on the next insurance fee.' });
+                                                                        fetchArchivedPayments();
+                                                                    } catch (err: any) {
+                                                                        toast({ title: 'Error', description: err.message || 'Failed to reactivate credit', variant: 'destructive' });
+                                                                    } finally {
+                                                                        setReactivating(prev => ({...prev, [ap.id]: false}));
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {reactivating[ap.id] ? 'Reactivating…' : 'Reactivate'}
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">—</span>
+                                                        )}
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))}
                                     </TableBody>

@@ -609,6 +609,71 @@ router.get('/:id/available-credits', [
     }
 });
 
+// Reactivate a specific archived credit for a student
+router.post('/:id/reactivate-credit', [
+    param('id').isInt({ min: 1 }),
+    body('creditId').isInt({ min: 1 }),
+    body('reason').optional().isString().trim(),
+    authenticateToken
+], async (req: any, res: any) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: errors.array()
+            });
+        }
+
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        // Accept either SIS student_id or internal DB ID
+        let studentId = parseInt(req.params.id);
+        if (isNaN(studentId) || studentId > 100000) {
+            const dbIdResult = await query('SELECT id FROM students WHERE student_id = $1', [req.params.id]);
+            if (dbIdResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Student not found' });
+            }
+            studentId = dbIdResult.rows[0].id;
+        }
+
+        const { creditId, reason } = req.body;
+
+        // Ensure the credit belongs to this student
+        const check = await query(
+            `SELECT id, is_invalidated FROM archived_fee_payments WHERE id = $1 AND student_id = $2`,
+            [creditId, studentId]
+        );
+        if (check.rows.length === 0) {
+            return res.status(404).json({ error: 'Credit not found for this student' });
+        }
+
+        // Reactivate the credit
+        const reactivate = await query(
+            `UPDATE archived_fee_payments
+             SET is_invalidated = FALSE,
+                 invalidated_at = NULL,
+                 invalidated_reason = NULL
+             WHERE id = $1
+             RETURNING id, transaction_id, is_invalidated`,
+            [creditId]
+        );
+
+        return res.json({
+            message: 'Credit reactivated successfully',
+            credit: reactivate.rows[0]
+        });
+    } catch (error) {
+        console.error('❌ [Reactivate Credit] Error:', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error instanceof Error ? error.message : 'Failed to reactivate credit'
+        });
+    }
+});
+
 // Get archived payments (all, including used/invalidated) for a student
 router.get('/:id/archived-payments', [
     authenticateToken
