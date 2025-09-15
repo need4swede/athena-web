@@ -32,6 +32,7 @@ const TransactionReport: React.FC<TransactionReportProps> = ({ school, checkoutB
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -46,6 +47,9 @@ const TransactionReport: React.FC<TransactionReportProps> = ({ school, checkoutB
         if (includeSubdirectories) {
           params.append('includeSubdirectories', 'true');
         }
+        if (includeArchived) {
+          params.append('includeArchived', 'true');
+        }
         const data = await apiRequest(`/reports/transactions?${params.toString()}`);
         setPayments(data);
       } catch (err) {
@@ -56,7 +60,7 @@ const TransactionReport: React.FC<TransactionReportProps> = ({ school, checkoutB
     };
 
     fetchPayments();
-  }, [school, checkoutBy, includeSubdirectories]);
+  }, [school, checkoutBy, includeSubdirectories, includeArchived]);
 
   // Filter payments based on search term
   const filteredPayments = useMemo(() => {
@@ -276,6 +280,15 @@ const TransactionReport: React.FC<TransactionReportProps> = ({ school, checkoutB
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Payment Transaction Details</CardTitle>
           <div className="flex gap-2">
+            <div className="flex items-center gap-2 mr-4">
+              <input
+                id="includeArchived"
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(e) => setIncludeArchived(e.target.checked)}
+              />
+              <label htmlFor="includeArchived" className="text-sm">Include archived payments</label>
+            </div>
             <Button onClick={downloadCsv} variant="outline" size="sm">
               <Download className="mr-2 h-4 w-4" />
               Export CSV
