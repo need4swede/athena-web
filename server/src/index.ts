@@ -59,12 +59,25 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration
+// CORS configuration using ALLOWED_ORIGINS (comma-separated)
+const parseAllowedOrigins = (): string[] => {
+    const set = new Set<string>();
+    const preferred = process.env.FRONTEND_URL || 'http://localhost:5173';
+    set.add(preferred);
+    set.add('http://localhost:6464');
+    const envList = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+    for (const o of envList) set.add(o);
+    return Array.from(set);
+};
+
+const allowedOrigins = parseAllowedOrigins();
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL || 'http://localhost:5173',
-        'http://localhost:6464' // Docker environment
-    ],
+    origin: (origin, callback) => {
+        // Allow non-browser requests or same-origin
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('CORS not allowed for origin'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -82,22 +95,20 @@ app.use(sandboxContext);
 
 // Serve static files from the 'files' directory with CORS headers
 app.use('/files', (req, res, next) => {
-    // Set CORS headers for static files - support both dev and Docker environments
-    const allowedOrigins = [
-        process.env.FRONTEND_URL || 'http://localhost:5173',
-        'http://localhost:6464' // Docker environment
-    ];
     const origin = req.get('Origin');
     if (origin && allowedOrigins.includes(origin)) {
         res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        res.header('Access-Control-Allow-Origin', 'http://localhost:6464'); // Default to Docker frontend
+        res.header('Vary', 'Origin');
     }
     res.header('Access-Control-Allow-Methods', 'GET');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
 }, express.static('files'));
+
+// Apply stricter rate limits to sensitive endpoints
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
+const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 
 // Debug middleware to log all requests (disabled in production)
 if ((process.env.NODE_ENV || 'development') !== 'production') {
@@ -128,7 +139,7 @@ console.log('🔧 [DEBUG] Registering API routes...');
 console.log('🔧 [DEBUG] Google API routes type:', typeof googleApiRoutes);
 console.log('🔧 [DEBUG] Google API routes:', googleApiRoutes);
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chromebooks', chromebookRoutes);
@@ -158,7 +169,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/insurance-override', insuranceOverrideRoutes);
 app.use('/api/sandbox', sandboxRoutes);
-app.use('/api/admin/db', dbAdminRoutes);
+app.use('/api/admin/db', adminLimiter, dbAdminRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
