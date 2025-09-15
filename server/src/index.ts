@@ -99,15 +99,19 @@ app.use('/files', (req, res, next) => {
     next();
 }, express.static('files'));
 
-// Debug middleware to log all requests
-app.use((req, res, next) => {
-    console.log(`🔍 [DEBUG] ${req.method} ${req.originalUrl}`);
-    console.log(`🔍 [DEBUG] Headers:`, JSON.stringify(req.headers, null, 2));
-    if (req.body && Object.keys(req.body).length > 0) {
-        console.log(`🔍 [DEBUG] Body:`, JSON.stringify(req.body, null, 2));
-    }
-    next();
-});
+// Debug middleware to log all requests (disabled in production)
+if ((process.env.NODE_ENV || 'development') !== 'production') {
+    app.use((req, res, next) => {
+        console.log(`🔍 [DEBUG] ${req.method} ${req.originalUrl}`);
+        // Avoid logging Authorization header for safety
+        const { authorization, ...restHeaders } = req.headers as Record<string, any>;
+        console.log(`🔍 [DEBUG] Headers:`, JSON.stringify(restHeaders, null, 2));
+        if (req.body && Object.keys(req.body).length > 0) {
+            console.log(`🔍 [DEBUG] Body:`, JSON.stringify(req.body, null, 2));
+        }
+        next();
+    });
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {

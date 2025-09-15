@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import { query } from '../database';
 import { authenticateToken } from '../middleware/auth';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import path from 'path';
 
 const router = Router();
-const execAsync = promisify(exec);
+// no exec: use spawn for safe argument passing
 
 // Search intent detection
 type SearchIntent = 'student' | 'device' | 'both';
@@ -31,22 +30,27 @@ function detectSearchIntent(searchQuery: string): SearchIntent {
 // Track ongoing background syncs to prevent duplicates
 const backgroundSyncs = new Map<string, Promise<void>>();
 
-// Helper function to run Athena script
+// Helper function to run Athena script safely (no shell)
 const runAthenaScript = async (scriptName: string, args: string[]): Promise<any> => {
-    const athenaPath = path.join(process.cwd(), 'athena', 'scripts');
-    const scriptPath = path.join(athenaPath, scriptName);
-    const command = `cd ${athenaPath} && python3 ${scriptPath} ${args.map(arg => `"${arg}"`).join(' ')}`;
-
-    try {
-        const { stdout, stderr } = await execAsync(command);
-        if (stderr) {
-            console.warn(`⚠️ [Athena Script] ${scriptName} stderr:`, stderr);
-        }
-        return JSON.parse(stdout);
-    } catch (error: any) {
-        console.error(`❌ [Athena Script] ${scriptName} error:`, error);
-        throw new Error(`Athena script failed: ${error.message}`);
-    }
+    const scriptsDir = path.join(process.cwd(), 'athena', 'scripts');
+    const scriptPath = path.join(scriptsDir, scriptName);
+    return new Promise((resolve, reject) => {
+        const env = { ...process.env, PYTHONPATH: process.cwd() };
+        const py = spawn('python3', [scriptPath, ...args], { env });
+        let out = '';
+        let err = '';
+        py.stdout.on('data', d => (out += d.toString()));
+        py.stderr.on('data', d => (err += d.toString()));
+        py.on('error', reject);
+        py.on('close', code => {
+            if (code !== 0) return reject(new Error(err || `Python exited with code ${code}`));
+            try {
+                resolve(JSON.parse(out.trim()));
+            } catch (e: any) {
+                reject(new Error(`Failed to parse Python output: ${e.message}`));
+            }
+        });
+    });
 };
 
 // Background sync function for students
