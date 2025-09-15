@@ -1,0 +1,31 @@
+# Exclude unneeded files from backend build context
+
+# VCS and OS clutter
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Secrets and env
+.env
+*.env
+athena/api/google_api/key.json
+
+# Build artifacts and deps
+node_modules
+dist
+
+# Not needed in image (mounted via volumes in compose/deploy)
+athena/
+database/
+files/
+
+# Misc
+public/.DS_Store

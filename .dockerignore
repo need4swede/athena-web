@@ -1,0 +1,35 @@
+# Exclude unneeded files from frontend build context
+
+# VCS and OS clutter
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+
+# Logs and coverage
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+coverage
+
+# Secrets and env
+.env
+*.env
+athena/api/google_api/key.json
+
+# Build artifacts and deps
+node_modules
+dist
+dist-ssr
+
+# Large or server-only directories
+server/
+athena/
+database/
+files/
+athena_old_but_working/
+
+# Misc
+public/.DS_Store

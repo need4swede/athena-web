@@ -1,0 +1,18 @@
+title = "Athena Web gitleaks config"
+
+# Minimal config to reduce false positives while still catching real secrets.
+# Run locally: `gitleaks detect -v --config .gitleaks.toml`
+
+[allowlist]
+description = "Allow common placeholders and example files"
+files = [
+  "server/.env.example",
+  "public/sso-config.json",
+  "public/sso-config-example.json",
+]
+regexes = [
+  '''\$\{[A-Z0-9_]+\}''',          # ${ENV_VAR} placeholders
+  '''your_[a-z0-9_\-]+_here''',      # your_..._here placeholders
+]
+
+# You can add more project-specific allowlists here if gitleaks reports FPs.
