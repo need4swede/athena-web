@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/database';
 
 interface SidebarProps {
   activeSection: string;
@@ -32,6 +34,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userRole
 }) => {
   const location = useLocation();
+
+  // Determine if Aeries should be shown: super-admin always; admins only when enabled
+  const { data: aeriesPerms } = useQuery({
+    queryKey: ['aeries-permissions'],
+    queryFn: async () => apiRequest('/aeries/permissions'),
+    enabled: userRole === 'admin' || userRole === 'super-admin',
+    staleTime: 60_000,
+  });
+
+  const hasAeriesAccess = userRole === 'super-admin' || !!aeriesPerms?.aeries_enabled;
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['user', 'admin', 'super-admin'], path: '/' },
@@ -48,9 +60,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'settings', label: 'Settings', icon: Settings, roles: ['super-admin'], path: '/' },
   ];
 
-  const availableItems = menuItems.filter(item =>
-    item.roles.includes(userRole)
-  );
+  const availableItems = menuItems
+    .filter(item => item.roles.includes(userRole))
+    .filter(item => item.id !== 'aeries' || hasAeriesAccess);
 
   const handleMenuItemClick = (id: string) => {
     onSectionChange(id);

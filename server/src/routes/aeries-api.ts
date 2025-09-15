@@ -280,3 +280,24 @@ router.post('/:resource/:method', authenticateToken, requireAeriesAccess, async 
 });
 
 export default router;
+
+// Expose current user's Aeries permissions for UI gating (no super-admin requirement)
+router.get('/permissions', authenticateToken, async (req: any, res: any) => {
+  try {
+    // Super admins implicitly have full access; report enabled=true
+    if (req.user?.role === 'super_admin') {
+      return res.json({
+        user_id: req.user.id,
+        aeries_enabled: true,
+      });
+    }
+
+    const perms = await getAeriesPermissions(req.user.id);
+    if (!perms) {
+      return res.json({ user_id: req.user.id, aeries_enabled: false });
+    }
+    return res.json(perms);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch Aeries permissions' });
+  }
+});
