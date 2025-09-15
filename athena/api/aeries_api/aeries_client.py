@@ -47,14 +47,63 @@ class AeriesAPI:
         self.attendance = AttendanceClient(endpoint, api_key)
         self.grades = GradesClient(endpoint, api_key)
     
+    def _load_env_file(self) -> None:
+        """
+        Best-effort loader for a local .env file to populate os.environ when
+        running in environments that don't automatically load it.
+
+        Checks a few common locations and only sets variables that are not
+        already present in the environment.
+        """
+        def parse_and_set(env_path: str) -> None:
+            try:
+                with open(env_path, 'r') as f:
+                    for line in f:
+                        s = line.strip()
+                        if not s or s.startswith('#'):
+                            continue
+                        if '=' not in s:
+                            continue
+                        key, val = s.split('=', 1)
+                        key = key.strip()
+                        val = val.strip().strip('"\'')
+                        if key and key not in os.environ:
+                            os.environ[key] = val
+            except Exception:
+                # Silently ignore .env parsing issues to avoid breaking callers
+                pass
+
+        candidates = [
+            os.path.join(os.getcwd(), '.env'),
+            os.path.join(self.api_directory.root(), '.env'),
+            os.path.join(os.path.dirname(self.api_directory.root()), '.env'),
+        ]
+        for path in candidates:
+            if os.path.isfile(path):
+                parse_and_set(path)
+
     def _read_config(self) -> Dict[str, str]:
         """
-        Read configuration from config.ini and auth.ini files.
+        Read configuration with the following precedence:
+        1) Environment variables (AERIES_ENDPOINT, AERIES_API_KEY), optionally
+           populated from a .env file if present
+        2) Legacy config files: config.ini (ENDPOINT) and auth.ini (KEY)
         
         Returns:
             Dict[str, str]: Configuration dictionary with endpoint and api_key
         """
-        # Read endpoint from config.ini
+        # First, try environment variables (and load from .env if available)
+        self._load_env_file()
+
+        env_endpoint = os.environ.get('AERIES_ENDPOINT')
+        env_api_key = os.environ.get('AERIES_API_KEY')
+        if env_endpoint and env_api_key:
+            return {
+                'endpoint': env_endpoint,
+                'api_key': env_api_key,
+            }
+
+        # Fallback: Read endpoint from config.ini
         config = configparser.ConfigParser()
         config_path = os.path.join(self.api_directory.aeries(), 'config.ini')
         config.read(config_path)
