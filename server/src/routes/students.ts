@@ -609,6 +609,38 @@ router.get('/:id/available-credits', [
     }
 });
 
+// Get archived payments (all, including used/invalidated) for a student
+router.get('/:id/archived-payments', [
+    authenticateToken
+], async (req: any, res: any) => {
+    try {
+        // Accept either SIS student_id or internal DB ID
+        let studentId = parseInt(req.params.id);
+        if (isNaN(studentId) || studentId > 100000) {
+            const dbIdResult = await query('SELECT id FROM students WHERE student_id = $1', [req.params.id]);
+            if (dbIdResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Student not found' });
+            }
+            studentId = dbIdResult.rows[0].id;
+        }
+
+        const result = await query(
+            `SELECT id, amount, payment_method, notes, processed_by_user_id, created_at,
+                    transaction_id, archived_at, original_asset_tag,
+                    is_invalidated, invalidated_at, invalidated_reason
+             FROM archived_fee_payments
+             WHERE student_id = $1
+             ORDER BY archived_at DESC`,
+            [studentId]
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error('❌ [ERROR] Error fetching archived payments:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get previous insurance payments for a student (legacy endpoint for backward compatibility)
 router.get('/:id/previous-insurance-payments', [
     authenticateToken
