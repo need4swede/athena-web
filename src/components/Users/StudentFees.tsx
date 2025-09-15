@@ -37,6 +37,9 @@ const StudentFees: React.FC<StudentFeesProps> = ({ studentId, studentName, stude
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
     const { token } = useAuth();
+    const [archivedPayments, setArchivedPayments] = useState<any[]>([]);
+    const [archivedOpen, setArchivedOpen] = useState(false);
+    const [archivedLoading, setArchivedLoading] = useState(false);
 
     // Super Admin: Delete a payment (transaction) with custom confirmation dialog
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; paymentId?: number }>({ open: false });
@@ -129,6 +132,30 @@ const StudentFees: React.FC<StudentFeesProps> = ({ studentId, studentName, stude
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchArchivedPayments = async () => {
+        try {
+            setArchivedLoading(true);
+            const response = await fetch(`/api/students/${studentId}/archived-payments`, {
+                headers: {
+                    ...(token && { 'Authorization': `Bearer ${token}` }),
+                },
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch archived payments');
+            }
+            const data = await response.json();
+            setArchivedPayments(data);
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to fetch archived payments.',
+                variant: 'destructive',
+            });
+        } finally {
+            setArchivedLoading(false);
         }
     };
 
@@ -400,6 +427,68 @@ const StudentFees: React.FC<StudentFeesProps> = ({ studentId, studentName, stude
                     </TableBody>
                 </Table>
             )}
+
+            {/* Archived payments section */}
+            <div className="mt-6">
+                <div className="flex items-center justify-between">
+                    <h4 className="text-md font-semibold">Archived Payments</h4>
+                    <Button variant="outline" size="sm" onClick={() => {
+                        const next = !archivedOpen;
+                        setArchivedOpen(next);
+                        if (next && archivedPayments.length === 0) {
+                            fetchArchivedPayments();
+                        }
+                    }}>
+                        {archivedOpen ? 'Hide' : 'Show'} Archived
+                    </Button>
+                </div>
+                {archivedOpen && (
+                    <div className="mt-3">
+                        {archivedLoading ? (
+                            <div className="text-sm text-muted-foreground">Loading archived payments...</div>
+                        ) : archivedPayments.length === 0 ? (
+                            <div className="text-sm text-muted-foreground">No archived payments found.</div>
+                        ) : (
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Transaction ID</TableHead>
+                                            <TableHead>Amount</TableHead>
+                                            <TableHead>Method</TableHead>
+                                            <TableHead>Original Device</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Payment Date</TableHead>
+                                            <TableHead>Archived</TableHead>
+                                            <TableHead>Notes</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {archivedPayments.map((ap) => (
+                                            <TableRow key={ap.id}>
+                                                <TableCell className="font-mono text-sm">{ap.transaction_id}</TableCell>
+                                                <TableCell>${Number(ap.amount).toFixed(2)}</TableCell>
+                                                <TableCell>{ap.payment_method || '—'}</TableCell>
+                                                <TableCell>{ap.original_asset_tag || '—'}</TableCell>
+                                                <TableCell>
+                                                    {ap.is_invalidated ? (
+                                                        <span className="text-xs text-gray-500">Used</span>
+                                                    ) : (
+                                                        <span className="text-xs text-green-600">Available</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>{ap.created_at ? format(new Date(ap.created_at), 'MMM d, yyyy') : '—'}</TableCell>
+                                                <TableCell>{ap.archived_at ? format(new Date(ap.archived_at), 'MMM d, yyyy') : '—'}</TableCell>
+                                                <TableCell>{ap.notes || '—'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         {/* Delete Payment Confirmation Dialog */}
         <Dialog open={deleteDialog.open} onOpenChange={cancelDeletePayment}>
             <DialogContent>
