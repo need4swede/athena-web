@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/transactions', authenticateToken, async (req, res) => {
   try {
-    const { school, checkoutBy, includeSubdirectories } = req.query;
+    const { school, checkoutBy, includeSubdirectories, includeArchived } = req.query as any;
 
     let whereClauses = [];
     let queryParams = [];
@@ -29,7 +29,7 @@ router.get('/transactions', authenticateToken, async (req, res) => {
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const queryString = `
+    let queryString = `
       SELECT
         fp.id,
         CONCAT(s.first_name, ' ', s.last_name) as student_name,
@@ -47,10 +47,40 @@ router.get('/transactions', authenticateToken, async (req, res) => {
       LEFT JOIN users u ON fp.processed_by_user_id = u.id
       LEFT JOIN google_users gu ON s.email = gu.primary_email
       ${whereClause}
-      ORDER BY fp.created_at DESC
     `;
 
-    const result = await query(queryString, queryParams);
+    if (includeArchived === 'true') {
+      queryString = `
+        (${queryString})
+        UNION ALL
+        (
+          SELECT
+            afp.id,
+            CONCAT(s.first_name, ' ', s.last_name) as student_name,
+            s.student_id,
+            'Device Insurance Fee (Archived)' as fee_description,
+            afp.amount,
+            afp.payment_method,
+            afp.transaction_id,
+            afp.notes,
+            afp.created_at,
+            u.name as processed_by
+          FROM archived_fee_payments afp
+          JOIN students s ON afp.student_id = s.id
+          LEFT JOIN users u ON afp.processed_by_user_id = u.id
+          LEFT JOIN google_users gu ON s.email = gu.primary_email
+          ${whereClause}
+        )
+      `;
+    }
+
+    // Final ordering by date
+    queryString = `
+      ${queryString}
+      ORDER BY created_at DESC
+    `;
+
+    const result = await query(queryString, queryParams.length ? queryParams.concat(queryParams) : queryParams);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching transaction report:', error);
