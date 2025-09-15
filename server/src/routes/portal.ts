@@ -4,10 +4,11 @@ import { query } from '../database';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { readFile } from 'fs/promises';
+import { getJwtSecretUnsafe } from '../utils/jwt';
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret';
+const JWT_SECRET = getJwtSecretUnsafe();
 
 // Portal Login
 router.post('/login', [
