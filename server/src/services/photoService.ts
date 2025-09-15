@@ -149,12 +149,45 @@ export const PhotoService = {
             return;
         }
 
-        for (const url of photoUrls) {
+        for (const originalUrl of photoUrls) {
             try {
-                const filePath = path.join(process.cwd(), url);
-                await fs.unlink(filePath);
+                // Support absolute URLs by extracting the pathname
+                let urlPath = originalUrl;
+                try {
+                    if (/^https?:\/\//i.test(originalUrl)) {
+                        const u = new URL(originalUrl);
+                        urlPath = u.pathname;
+                    }
+                } catch {
+                    // ignore parse errors; fall back to given string
+                }
+
+                // Expect paths under /files/photos; strip that prefix if present
+                const prefix = '/files/photos/';
+                if (urlPath.startsWith('/files/')) {
+                    if (!urlPath.startsWith(prefix)) {
+                        console.warn(`⚠️ [PhotoService] Refusing to delete non-photo path: ${urlPath}`);
+                        continue;
+                    }
+                    urlPath = urlPath.substring(prefix.length);
+                }
+
+                // Normalize and resolve relative to PHOTO_DIR
+                const normalized = path.normalize(urlPath).replace(/^\/+/, ''); // remove leading slashes
+                const candidate = path.join(PHOTO_DIR, normalized);
+
+                // Ensure the resolved path is within PHOTO_DIR
+                const resolved = path.resolve(candidate);
+                const base = path.resolve(PHOTO_DIR);
+                if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+                    console.warn(`⚠️ [PhotoService] Refusing to delete path outside photo dir: ${resolved}`);
+                    continue;
+                }
+
+                await fs.unlink(resolved);
+                console.log(`🗑️ [PhotoService] Deleted photo: ${resolved}`);
             } catch (error) {
-                console.error(`❌ [PhotoService] Error deleting photo: ${url}`, error);
+                console.error(`❌ [PhotoService] Error deleting photo: ${originalUrl}`, error);
                 // Continue to next photo if one fails
             }
         }
