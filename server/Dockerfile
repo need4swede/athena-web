@@ -29,7 +29,7 @@ WORKDIR /app
 COPY --chown=nodejs:nodejs package*.json ./
 
 # Install dependencies as nodejs user
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code with correct ownership
 COPY --chown=nodejs:nodejs . .
