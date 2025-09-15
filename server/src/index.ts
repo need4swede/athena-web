@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import { validateJwtSecretOrExit } from './utils/jwt';
 import { connectToDatabase } from './database';
 import { getDatabaseTimestamp } from './utils/timezone';
 import { authRoutes } from './routes/auth';
@@ -34,6 +35,9 @@ import dbAdminRoutes from './routes/db-admin';
 
 // Load environment variables
 dotenv.config();
+
+// Enforce strong JWT secret in production
+validateJwtSecretOrExit();
 
 const app = express();
 const PORT = process.env.PORT || 3002;
