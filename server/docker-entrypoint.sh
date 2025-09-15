@@ -68,30 +68,29 @@ except ImportError as e:
     print(f'❌ Import error: {e}')
 "
 
-# Prepare Google API credentials (support new env-based setup)
+# Prepare Google API credentials (prefer env; avoid writing files)
 echo "🐍 [DEBUG] Preparing Google API credentials..."
 KEY_JSON_PATH="/app/athena/api/google_api/key.json"
 
-# 1) If GOOGLE_SERVICE_ACCOUNT_JSON(_B64) is provided, write it to key.json
+# 1) If GOOGLE_SERVICE_ACCOUNT_JSON(_B64) is provided, keep it in env; do not write to disk
 if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON_B64" ]; then
-    echo "📄 Decoding GOOGLE_SERVICE_ACCOUNT_JSON_B64 to $KEY_JSON_PATH"
-    mkdir -p "$(dirname "$KEY_JSON_PATH")"
-    # Some shells may not have base64; use Python for portability
-    python3 - <<PY || true
-import os,base64
-dest=os.environ.get('KEY_JSON_PATH','/app/athena/api/google_api/key.json')
+    echo "📄 Decoding GOOGLE_SERVICE_ACCOUNT_JSON_B64 into environment (no file)"
+    export GOOGLE_SERVICE_ACCOUNT_JSON="$(python3 - <<'PY'
+import os,base64,sys
 data=os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON_B64','')
-os.makedirs(os.path.dirname(dest), exist_ok=True)
-with open(dest,'wb') as f:
-    f.write(base64.b64decode(data))
-print('Wrote decoded service account JSON to', dest)
+try:
+    sys.stdout.write(base64.b64decode(data).decode('utf-8'))
+except Exception:
+    pass
 PY
-    export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
-elif [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
-    echo "📄 Writing GOOGLE_SERVICE_ACCOUNT_JSON to $KEY_JSON_PATH"
-    mkdir -p "$(dirname "$KEY_JSON_PATH")"
-    printf "%s" "$GOOGLE_SERVICE_ACCOUNT_JSON" > "$KEY_JSON_PATH" || true
-    export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
+)"
+    unset GOOGLE_SERVICE_ACCOUNT_JSON_B64
+fi
+
+# If a JSON string is present, prefer it and avoid GOOGLE_APPLICATION_CREDENTIALS
+if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+    echo "✅ GOOGLE_SERVICE_ACCOUNT_JSON present; using in-memory credentials"
+    unset GOOGLE_APPLICATION_CREDENTIALS || true
 fi
 
 # Build common extra headers from ACCOUNT_FILE_HEADERS (JSON)
@@ -99,16 +98,14 @@ EXTRA_HEADERS_JSON="${ACCOUNT_FILE_HEADERS}"
 export EXTRA_HEADERS_JSON
 
 # 2) If GOOGLE_SERVICE_ACCOUNT_FILE is provided
-if [ -n "$GOOGLE_SERVICE_ACCOUNT_FILE" ] && [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+if [ -n "$GOOGLE_SERVICE_ACCOUNT_FILE" ] && [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
     case "$GOOGLE_SERVICE_ACCOUNT_FILE" in
         http://*|https://*)
-            echo "🌐 Fetching GOOGLE_SERVICE_ACCOUNT_FILE from URL"
-            python3 - <<PY || true
+            echo "🌐 Fetching GOOGLE_SERVICE_ACCOUNT_FILE from URL into environment"
+            export GOOGLE_SERVICE_ACCOUNT_JSON="$(python3 - <<'PY'
 import json,os
 from urllib.request import Request, urlopen
 url=os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE')
-dest=os.environ.get('KEY_JSON_PATH','/app/athena/api/google_api/key.json')
-os.makedirs(os.path.dirname(dest), exist_ok=True)
 headers={'User-Agent':'Mozilla/5.0'}
 ref=os.environ.get('FRONTEND_URL')
 if ref:
@@ -123,49 +120,38 @@ req=Request(url, headers=headers)
 with urlopen(req, timeout=20) as r:
     data=r.read().decode('utf-8')
     json.loads(data)  # validate JSON
-    with open(dest,'w',encoding='utf-8') as f:
-        f.write(data)
-print('Downloaded service account key to', dest)
+    print(data, end='')
 PY
-            if [ -f "$KEY_JSON_PATH" ]; then
-                export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
-            fi
+)"
+            unset GOOGLE_APPLICATION_CREDENTIALS || true
             ;;
         *)
             if [ -f "$GOOGLE_SERVICE_ACCOUNT_FILE" ]; then
-                export GOOGLE_APPLICATION_CREDENTIALS="$GOOGLE_SERVICE_ACCOUNT_FILE"
+                echo "📄 Reading GOOGLE_SERVICE_ACCOUNT_FILE from local path into environment"
+                export GOOGLE_SERVICE_ACCOUNT_JSON="$(cat "$GOOGLE_SERVICE_ACCOUNT_FILE" || true)"
+                unset GOOGLE_APPLICATION_CREDENTIALS || true
             fi
             ;;
     esac
 fi
 
 # Final diagnostics
-echo "🐍 [DEBUG] GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
-if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-    echo "✅ Google API credentials file ready at $GOOGLE_APPLICATION_CREDENTIALS"
+if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+    echo "🐍 [DEBUG] Using GOOGLE_SERVICE_ACCOUNT_JSON (in-memory). No file written."
 else
-    echo "⚠️ Google API credentials not resolved via env; falling back to legacy key.json if present"
-    if [ -f "$KEY_JSON_PATH" ]; then
-        echo "✅ Found legacy key.json at $KEY_JSON_PATH"
-    else
-        echo "⚠️ No legacy key.json at $KEY_JSON_PATH"
-    fi
+    echo "⚠️ GOOGLE_SERVICE_ACCOUNT_JSON not set; if relying on GOOGLE_APPLICATION_CREDENTIALS, ensure it points to a secret mount (not bind-mounted)."
 fi
 
 # 3) Aeries support: fetch account file JSON and export AERIES_ENDPOINT/AERIES_API_KEY when provided
 echo "🐍 [DEBUG] Preparing Aeries API credentials..."
-AERIES_KEY_JSON_PATH="/app/athena/api/aeries_api/key.json"
-if [ -n "$AERIES_ACCOUNT_FILE" ]; then
+if [ -n "$AERIES_ACCOUNT_FILE" ] && [ -z "$AERIES_ACCOUNT_JSON" ]; then
     case "$AERIES_ACCOUNT_FILE" in
         http://*|https://*)
-            echo "🌐 Fetching AERIES_ACCOUNT_FILE from URL"
-            KEY_DEST="$AERIES_KEY_JSON_PATH" EXTRA_HEADERS_JSON="$EXTRA_HEADERS_JSON" FRONTEND_URL="$FRONTEND_URL" \
-            python3 - <<'PY' || true
+            echo "🌐 Fetching AERIES_ACCOUNT_FILE from URL into environment"
+            JSON_DATA="$(python3 - <<'PY'
 import json,os
 from urllib.request import Request, urlopen
 url=os.environ.get('AERIES_ACCOUNT_FILE')
-dest=os.environ.get('KEY_DEST','/app/athena/api/aeries_api/key.json')
-os.makedirs(os.path.dirname(dest), exist_ok=True)
 headers={'User-Agent':'Mozilla/5.0'}
 ref=os.environ.get('FRONTEND_URL')
 if ref:
@@ -179,77 +165,43 @@ if extra:
 req=Request(url, headers=headers)
 with urlopen(req, timeout=20) as r:
     data=r.read().decode('utf-8')
-    obj=json.loads(data)  # validate JSON
-    with open(dest,'w',encoding='utf-8') as f:
-        f.write(data)
-    # Try to export endpoint and api key if present in JSON (support common keys)
-    endpoint = obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL')
-    api_key  = obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY')
-    if endpoint:
-        print('Discovered Aeries endpoint in key.json')
-        print('::EXPORT::AERIES_ENDPOINT=' + endpoint)
-    if api_key:
-        print('Discovered Aeries API key in key.json')
-        print('::EXPORT::AERIES_API_KEY=' + api_key)
-print('Downloaded Aeries account key to', dest)
+    obj=json.loads(data)  # validate
+    print(data, end='')
 PY
-            # Consume EXPORT lines to set env in this shell
-            if [ -f "$AERIES_KEY_JSON_PATH" ]; then
-                # Point AERIES_ACCOUNT_FILE to the downloaded local file to avoid re-fetching
-                export AERIES_ACCOUNT_FILE="$AERIES_KEY_JSON_PATH"
-                # Read back endpoint/key if printed
+)"
+            export AERIES_ACCOUNT_JSON="$JSON_DATA"
+            # Also export convenience vars if present
+            AE_EP=$(python3 - <<'PY'
+import json,os,sys
+obj=json.loads(os.environ.get('AERIES_ACCOUNT_JSON','{}'))
+print(obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL') or '')
+PY
+)
+            AE_KEY=$(python3 - <<'PY'
+import json,os,sys
+obj=json.loads(os.environ.get('AERIES_ACCOUNT_JSON','{}'))
+print(obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY') or '')
+PY
+)
+            if [ -n "$AE_EP" ]; then export AERIES_ENDPOINT="$AE_EP"; fi
+            if [ -n "$AE_KEY" ]; then export AERIES_API_KEY="$AE_KEY"; fi
+            ;;
+        *)
+            if [ -f "$AERIES_ACCOUNT_FILE" ]; then
+                echo "📄 Reading AERIES_ACCOUNT_FILE from local path into environment"
+                export AERIES_ACCOUNT_JSON="$(cat "$AERIES_ACCOUNT_FILE" || true)"
                 AE_EP=$(python3 - <<'PY'
 import json,os
-p='/app/athena/api/aeries_api/key.json'
-try:
-    with open(p,'r',encoding='utf-8') as f:
-        obj=json.load(f)
-    print(obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL') or '')
-except Exception:
-    print('')
+obj=json.loads(os.environ.get('AERIES_ACCOUNT_JSON','{}'))
+print(obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL') or '')
 PY
 )
                 AE_KEY=$(python3 - <<'PY'
 import json,os
-p='/app/athena/api/aeries_api/key.json'
-try:
-    with open(p,'r',encoding='utf-8') as f:
-        obj=json.load(f)
-    print(obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY') or '')
-except Exception:
-    print('')
+obj=json.loads(os.environ.get('AERIES_ACCOUNT_JSON','{}'))
+print(obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY') or '')
 PY
 )
-                if [ -n "$AE_EP" ]; then export AERIES_ENDPOINT="$AE_EP"; fi
-                if [ -n "$AE_KEY" ]; then export AERIES_API_KEY="$AE_KEY"; fi
-            fi
-            ;;
-        *)
-            if [ -f "$AERIES_ACCOUNT_FILE" ]; then
-                AERIES_KEY_JSON_PATH="$AERIES_ACCOUNT_FILE"
-                # Try to extract endpoint/key locally
-                AE_EP=$(python3 - <<PY
-import json,sys
-p=sys.argv[1]
-try:
-    with open(p,'r',encoding='utf-8') as f:
-        obj=json.load(f)
-    print(obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL') or '')
-except Exception:
-    print('')
-PY
-"$AERIES_ACCOUNT_FILE")
-                AE_KEY=$(python3 - <<PY
-import json,sys
-p=sys.argv[1]
-try:
-    with open(p,'r',encoding='utf-8') as f:
-        obj=json.load(f)
-    print(obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY') or '')
-except Exception:
-    print('')
-PY
-"$AERIES_ACCOUNT_FILE")
                 if [ -n "$AE_EP" ]; then export AERIES_ENDPOINT="$AE_EP"; fi
                 if [ -n "$AE_KEY" ]; then export AERIES_API_KEY="$AE_KEY"; fi
             fi
