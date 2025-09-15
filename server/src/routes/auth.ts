@@ -3,11 +3,12 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import { createOrUpdateUser, getUserByEmail } from '../database';
 import { ssoConfigService } from '../services/sso-config.service';
+import { getJwtSecretUnsafe } from '../utils/jwt';
 
 const router = express.Router();
 
-// JWT secret (in production, this should be in environment variables)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+// JWT secret (validated at startup for production)
+const JWT_SECRET = getJwtSecretUnsafe();
 
 // SSO Login endpoint
 router.post('/sso-login', [
