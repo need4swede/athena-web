@@ -72,8 +72,22 @@ except ImportError as e:
 echo "🐍 [DEBUG] Preparing Google API credentials..."
 KEY_JSON_PATH="/app/athena/api/google_api/key.json"
 
-# 1) If GOOGLE_SERVICE_ACCOUNT_JSON is provided, write it to key.json
-if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+# 1) If GOOGLE_SERVICE_ACCOUNT_JSON(_B64) is provided, write it to key.json
+if [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON_B64" ]; then
+    echo "📄 Decoding GOOGLE_SERVICE_ACCOUNT_JSON_B64 to $KEY_JSON_PATH"
+    mkdir -p "$(dirname "$KEY_JSON_PATH")"
+    # Some shells may not have base64; use Python for portability
+    python3 - <<PY || true
+import os,base64
+dest=os.environ.get('KEY_JSON_PATH','/app/athena/api/google_api/key.json')
+data=os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON_B64','')
+os.makedirs(os.path.dirname(dest), exist_ok=True)
+with open(dest,'wb') as f:
+    f.write(base64.b64decode(data))
+print('Wrote decoded service account JSON to', dest)
+PY
+    export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
+elif [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
     echo "📄 Writing GOOGLE_SERVICE_ACCOUNT_JSON to $KEY_JSON_PATH"
     mkdir -p "$(dirname "$KEY_JSON_PATH")"
     printf "%s" "$GOOGLE_SERVICE_ACCOUNT_JSON" > "$KEY_JSON_PATH" || true
@@ -86,15 +100,25 @@ if [ -n "$GOOGLE_SERVICE_ACCOUNT_FILE" ] && [ ! -f "$GOOGLE_APPLICATION_CREDENTI
         http://*|https://*)
             echo "🌐 Fetching GOOGLE_SERVICE_ACCOUNT_FILE from URL"
             python3 - <<PY || true
-import json,sys,os
-import urllib.request
+import json,os
+from urllib.request import Request, urlopen
 url=os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE')
 dest=os.environ.get('KEY_JSON_PATH','/app/athena/api/google_api/key.json')
 os.makedirs(os.path.dirname(dest), exist_ok=True)
-with urllib.request.urlopen(url, timeout=15) as r:
+headers={'User-Agent':'Mozilla/5.0'}
+ref=os.environ.get('FRONTEND_URL')
+if ref:
+    headers['Referer']=ref
+extra=os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE_HEADERS')
+if extra:
+    try:
+        headers.update(json.loads(extra))
+    except Exception:
+        pass
+req=Request(url, headers=headers)
+with urlopen(req, timeout=20) as r:
     data=r.read().decode('utf-8')
-    # Basic validation
-    json.loads(data)
+    json.loads(data)  # validate JSON
     with open(dest,'w',encoding='utf-8') as f:
         f.write(data)
 print('Downloaded service account key to', dest)
