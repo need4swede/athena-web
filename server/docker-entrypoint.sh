@@ -94,6 +94,10 @@ elif [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
     export GOOGLE_APPLICATION_CREDENTIALS="$KEY_JSON_PATH"
 fi
 
+# Build common extra headers from ACCOUNT_FILE_HEADERS (JSON)
+EXTRA_HEADERS_JSON="${ACCOUNT_FILE_HEADERS}"
+export EXTRA_HEADERS_JSON
+
 # 2) If GOOGLE_SERVICE_ACCOUNT_FILE is provided
 if [ -n "$GOOGLE_SERVICE_ACCOUNT_FILE" ] && [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
     case "$GOOGLE_SERVICE_ACCOUNT_FILE" in
@@ -109,7 +113,7 @@ headers={'User-Agent':'Mozilla/5.0'}
 ref=os.environ.get('FRONTEND_URL')
 if ref:
     headers['Referer']=ref
-extra=os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE_HEADERS')
+extra=os.environ.get('EXTRA_HEADERS_JSON')
 if extra:
     try:
         headers.update(json.loads(extra))
@@ -147,6 +151,112 @@ else
         echo "⚠️ No legacy key.json at $KEY_JSON_PATH"
     fi
 fi
+
+# 3) Aeries support: fetch account file JSON and export AERIES_ENDPOINT/AERIES_API_KEY when provided
+echo "🐍 [DEBUG] Preparing Aeries API credentials..."
+AERIES_KEY_JSON_PATH="/app/athena/api/aeries_api/key.json"
+if [ -n "$AERIES_ACCOUNT_FILE" ]; then
+    case "$AERIES_ACCOUNT_FILE" in
+        http://*|https://*)
+            echo "🌐 Fetching AERIES_ACCOUNT_FILE from URL"
+            KEY_DEST="$AERIES_KEY_JSON_PATH" EXTRA_HEADERS_JSON="$EXTRA_HEADERS_JSON" FRONTEND_URL="$FRONTEND_URL" \
+            python3 - <<'PY' || true
+import json,os
+from urllib.request import Request, urlopen
+url=os.environ.get('AERIES_ACCOUNT_FILE')
+dest=os.environ.get('KEY_DEST','/app/athena/api/aeries_api/key.json')
+os.makedirs(os.path.dirname(dest), exist_ok=True)
+headers={'User-Agent':'Mozilla/5.0'}
+ref=os.environ.get('FRONTEND_URL')
+if ref:
+    headers['Referer']=ref
+extra=os.environ.get('EXTRA_HEADERS_JSON')
+if extra:
+    try:
+        headers.update(json.loads(extra))
+    except Exception:
+        pass
+req=Request(url, headers=headers)
+with urlopen(req, timeout=20) as r:
+    data=r.read().decode('utf-8')
+    obj=json.loads(data)  # validate JSON
+    with open(dest,'w',encoding='utf-8') as f:
+        f.write(data)
+    # Try to export endpoint and api key if present in JSON (support common keys)
+    endpoint = obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL')
+    api_key  = obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY')
+    if endpoint:
+        print('Discovered Aeries endpoint in key.json')
+        print('::EXPORT::AERIES_ENDPOINT=' + endpoint)
+    if api_key:
+        print('Discovered Aeries API key in key.json')
+        print('::EXPORT::AERIES_API_KEY=' + api_key)
+print('Downloaded Aeries account key to', dest)
+PY
+            # Consume EXPORT lines to set env in this shell
+            if [ -f "$AERIES_KEY_JSON_PATH" ]; then
+                # Read back endpoint/key if printed
+                AE_EP=$(python3 - <<'PY'
+import json,os
+p='/app/athena/api/aeries_api/key.json'
+try:
+    with open(p,'r',encoding='utf-8') as f:
+        obj=json.load(f)
+    print(obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL') or '')
+except Exception:
+    print('')
+PY
+)
+                AE_KEY=$(python3 - <<'PY'
+import json,os
+p='/app/athena/api/aeries_api/key.json'
+try:
+    with open(p,'r',encoding='utf-8') as f:
+        obj=json.load(f)
+    print(obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY') or '')
+except Exception:
+    print('')
+PY
+)
+                if [ -n "$AE_EP" ]; then export AERIES_ENDPOINT="$AE_EP"; fi
+                if [ -n "$AE_KEY" ]; then export AERIES_API_KEY="$AE_KEY"; fi
+            fi
+            ;;
+        *)
+            if [ -f "$AERIES_ACCOUNT_FILE" ]; then
+                AERIES_KEY_JSON_PATH="$AERIES_ACCOUNT_FILE"
+                # Try to extract endpoint/key locally
+                AE_EP=$(python3 - <<PY
+import json,sys
+p=sys.argv[1]
+try:
+    with open(p,'r',encoding='utf-8') as f:
+        obj=json.load(f)
+    print(obj.get('endpoint') or obj.get('ENDPOINT') or obj.get('url') or obj.get('URL') or '')
+except Exception:
+    print('')
+PY
+"$AERIES_ACCOUNT_FILE")
+                AE_KEY=$(python3 - <<PY
+import json,sys
+p=sys.argv[1]
+try:
+    with open(p,'r',encoding='utf-8') as f:
+        obj=json.load(f)
+    print(obj.get('api_key') or obj.get('API_KEY') or obj.get('key') or obj.get('KEY') or '')
+except Exception:
+    print('')
+PY
+"$AERIES_ACCOUNT_FILE")
+                if [ -n "$AE_EP" ]; then export AERIES_ENDPOINT="$AE_EP"; fi
+                if [ -n "$AE_KEY" ]; then export AERIES_API_KEY="$AE_KEY"; fi
+            fi
+            ;;
+    esac
+fi
+
+echo "🐍 [DEBUG] Aeries: AERIES_ENDPOINT=${AERIES_ENDPOINT}"
+if [ -n "$AERIES_API_KEY" ]; then echo "🐍 [DEBUG] Aeries: API key loaded"; else echo "⚠️ Aeries API key not set"; fi
 
 # Start the application
 echo "🐍 [DEBUG] Starting the application..."
