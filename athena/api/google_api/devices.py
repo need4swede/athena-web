@@ -37,8 +37,39 @@ class Initialize:
         """
         self.api_path = _API_Path()
         self.cwd = os.getcwd()
+        # Load env early so env vars can override file-based config
+        self._load_env_file()
         self.auth = self.read_auth()
         self.config = self.read_config()
+
+    def _load_env_file(self) -> None:
+        """
+        Best-effort loader for a local .env file to populate os.environ.
+        Looks in CWD, package root, and parent of package root.
+        """
+        def parse_and_set(env_path: str) -> None:
+            try:
+                with open(env_path, 'r') as f:
+                    for line in f:
+                        s = line.strip()
+                        if not s or s.startswith('#') or '=' not in s:
+                            continue
+                        k, v = s.split('=', 1)
+                        k = k.strip()
+                        v = v.strip().strip("\"'")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+            except Exception:
+                pass
+
+        candidates = [
+            os.path.join(os.getcwd(), '.env'),
+            os.path.join(self.api_path.root(), '.env'),
+            os.path.join(os.path.dirname(self.api_path.root()), '.env'),
+        ]
+        for p in candidates:
+            if os.path.isfile(p):
+                parse_and_set(p)
 
     def read_auth(self):
         """
@@ -58,6 +89,20 @@ class Initialize:
         Returns:
             configparser.ConfigParser: Parsed general configuration.
         """
+        # If env vars are provided, synthesize a ConfigParser
+        env_admin = os.environ.get('GOOGLE_ADMIN_EMAIL')
+        env_scopes = os.environ.get('GOOGLE_SCOPES')
+
+        if env_admin or env_scopes:
+            cfg = configparser.ConfigParser()
+            cfg['Settings'] = {}
+            if env_admin:
+                cfg['Settings']['ADMIN'] = env_admin
+            if env_scopes:
+                cfg['Settings']['SCOPES'] = env_scopes
+            return cfg
+
+        # Fallback to legacy config.ini
         config = configparser.ConfigParser()
         config.read(os.path.join(self.api_path.root(), self.api_path.google(), 'config.ini'))
         return config
@@ -79,16 +124,48 @@ class Initialize:
         Returns:
             google.oauth2.service_account.Credentials: Credentials object.
         """
-        scopes = self.config['Settings']['SCOPES']
-        # Try to parse as a list, if it fails, treat as a single string
-        try:
-            scopes = ast.literal_eval(scopes)
-        except (ValueError, SyntaxError):
-            scopes = [scopes]  # Wrap single scope in a list
+        # Resolve scopes from config or env
+        raw_scopes = None
+        if self.config and self.config.has_section('Settings') and self.config.has_option('Settings', 'SCOPES'):
+            raw_scopes = self.config.get('Settings', 'SCOPES')
+        else:
+            raw_scopes = os.environ.get('GOOGLE_SCOPES')
 
-        credentials = service_account.Credentials.from_service_account_file(
-            self.read_key(), scopes=scopes)
-        return credentials
+        scopes = []
+        if raw_scopes:
+            # Try JSON first, then Python literal, then comma-separated
+            try:
+                parsed = json.loads(raw_scopes)
+                if isinstance(parsed, list):
+                    scopes = [str(s) for s in parsed]
+                else:
+                    scopes = [str(parsed)]
+            except Exception:
+                try:
+                    parsed = ast.literal_eval(raw_scopes)
+                    if isinstance(parsed, list):
+                        scopes = [str(s) for s in parsed]
+                    else:
+                        scopes = [str(parsed)]
+                except Exception:
+                    scopes = [s.strip() for s in raw_scopes.split(',') if s.strip()]
+
+        # Prefer inline JSON credentials via env; then an explicit file path; then legacy key.json
+        key_json = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON')
+        key_file = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE')
+
+        if key_json:
+            try:
+                info = json.loads(key_json)
+            except json.JSONDecodeError:
+                raise ValueError('GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON')
+            return service_account.Credentials.from_service_account_info(info, scopes=scopes or None)
+
+        if key_file and os.path.isfile(key_file):
+            return service_account.Credentials.from_service_account_file(key_file, scopes=scopes or None)
+
+        # Fallback to legacy bundled key.json
+        return service_account.Credentials.from_service_account_file(self.read_key(), scopes=scopes or None)
 
 class Devices(Initialize):
     """
@@ -129,19 +206,24 @@ class Devices(Initialize):
         Returns:
             google.oauth2.service_account.Credentials: Admin credentials.
         """
-        admin_email = self.config['Settings']['ADMIN']
+        # Resolve admin email from env or config
+        admin_email = None
+        if self.config and self.config.has_section('Settings') and self.config.has_option('Settings', 'ADMIN'):
+            admin_email = self.config.get('Settings', 'ADMIN')
+        if not admin_email:
+            admin_email = os.environ.get('GOOGLE_ADMIN_EMAIL')
         return self.credentials.with_subject(admin_email)
 
     def verify_configuration(self):
         """
         Verify the configuration settings.
         """
-        required_settings = ['SCOPES', 'ADMIN']
-        for setting in required_settings:
-            if setting not in self.config['Settings']:
-                raise ValueError(f"Missing required setting: {setting}")
-
-        admin_email = self.config['Settings']['ADMIN']
+        # Ensure required settings are present either in env or config
+        admin_email = None
+        if self.config and self.config.has_section('Settings') and self.config.has_option('Settings', 'ADMIN'):
+            admin_email = self.config.get('Settings', 'ADMIN')
+        if not admin_email:
+            admin_email = os.environ.get('GOOGLE_ADMIN_EMAIL')
         if not admin_email or '@' not in admin_email:
             raise ValueError(f"Invalid admin email: {admin_email}")
 
