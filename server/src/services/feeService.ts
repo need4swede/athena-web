@@ -544,9 +544,9 @@ export const replaceInsuranceFee = async (
 
             // Archive payments before deleting fee
             for (const p of payments) {
-                // Check if already archived (avoid duplicates)
+                // Check if already archived
                 const archivedCheck = await query(
-                    `SELECT id FROM archived_fee_payments WHERE transaction_id = $1 AND student_id = $2`,
+                    `SELECT id, is_invalidated FROM archived_fee_payments WHERE transaction_id = $1 AND student_id = $2`,
                     [p.transaction_id, studentId]
                 );
                 if (archivedCheck.rows.length === 0) {
@@ -569,7 +569,20 @@ export const replaceInsuranceFee = async (
                     );
                     console.log(`[Archive] Archived insurance payment transaction_id=${p.transaction_id} for student_id=${studentId} with asset_tag=${assetTagForArchive}`);
                 } else {
-                    console.log(`[Archive] Payment transaction_id=${p.transaction_id} for student_id=${studentId} already archived, skipping.`);
+                    // Reactivate previously used credit so it can be reused after swap
+                    const creditId = archivedCheck.rows[0].id;
+                    const wasInvalidated = !!archivedCheck.rows[0].is_invalidated;
+                    await query(
+                        `UPDATE archived_fee_payments
+                         SET is_invalidated = FALSE,
+                             invalidated_at = NULL,
+                             invalidated_reason = NULL,
+                             original_asset_tag = COALESCE($2, original_asset_tag),
+                             archived_at = NOW()
+                         WHERE id = $1`,
+                        [creditId, assetTagForArchive]
+                    );
+                    console.log(`[Archive] Reactivated existing credit transaction_id=${p.transaction_id} for student_id=${studentId} (was_invalidated=${wasInvalidated})`);
                 }
             }
 
@@ -591,24 +604,44 @@ export const replaceInsuranceFee = async (
                 [oldFee.id]
             );
             for (const p of latePayments.rows) {
-                await query(
-                    `INSERT INTO archived_fee_payments
-                        (student_id, original_fee_id, original_payment_id, amount, payment_method, notes, processed_by_user_id, created_at, transaction_id, archived_at, original_asset_tag)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10)`,
-                    [
-                        studentId,
-                        oldFee.id,
-                        p.id || null,
-                        p.amount,
-                        p.payment_method,
-                        p.notes,
-                        p.processed_by_user_id,
-                        p.created_at,
-                        p.transaction_id,
-                        assetTagForArchive
-                    ]
+                const archivedCheck2 = await query(
+                    `SELECT id, is_invalidated FROM archived_fee_payments WHERE transaction_id = $1 AND student_id = $2`,
+                    [p.transaction_id, studentId]
                 );
-                console.log(`[Archive] (Late) Archived insurance payment transaction_id=${p.transaction_id} for student_id=${studentId} with asset_tag=${assetTagForArchive}`);
+                if (archivedCheck2.rows.length === 0) {
+                    await query(
+                        `INSERT INTO archived_fee_payments
+                            (student_id, original_fee_id, original_payment_id, amount, payment_method, notes, processed_by_user_id, created_at, transaction_id, archived_at, original_asset_tag)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10)`,
+                        [
+                            studentId,
+                            oldFee.id,
+                            p.id || null,
+                            p.amount,
+                            p.payment_method,
+                            p.notes,
+                            p.processed_by_user_id,
+                            p.created_at,
+                            p.transaction_id,
+                            assetTagForArchive
+                        ]
+                    );
+                    console.log(`[Archive] (Late) Archived insurance payment transaction_id=${p.transaction_id} for student_id=${studentId} with asset_tag=${assetTagForArchive}`);
+                } else {
+                    const creditId2 = archivedCheck2.rows[0].id;
+                    const wasInvalidated2 = !!archivedCheck2.rows[0].is_invalidated;
+                    await query(
+                        `UPDATE archived_fee_payments
+                         SET is_invalidated = FALSE,
+                             invalidated_at = NULL,
+                             invalidated_reason = NULL,
+                             original_asset_tag = COALESCE($2, original_asset_tag),
+                             archived_at = NOW()
+                         WHERE id = $1`,
+                        [creditId2, assetTagForArchive]
+                    );
+                    console.log(`[Archive] (Late) Reactivated existing credit transaction_id=${p.transaction_id} for student_id=${studentId} (was_invalidated=${wasInvalidated2})`);
+                }
             }
         } else {
             console.log(`🔄 [Insurance Replacement] No existing insurance fee found`);
@@ -981,9 +1014,9 @@ export const archiveInsurancePayments = async (
 
             // Archive payments
             for (const p of payments) {
-                // Check if already archived (avoid duplicates)
+                // Check if already archived
                 const archivedCheck = await query(
-                    `SELECT id FROM archived_fee_payments WHERE transaction_id = $1 AND student_id = $2`,
+                    `SELECT id, is_invalidated FROM archived_fee_payments WHERE transaction_id = $1 AND student_id = $2`,
                     [p.transaction_id, studentId]
                 );
                 if (archivedCheck.rows.length === 0) {
@@ -1007,7 +1040,20 @@ export const archiveInsurancePayments = async (
                     archivedCount++;
                     console.log(`📦 [Archive Only] Archived payment transaction_id=${p.transaction_id} for device ${currentAssetTag}`);
                 } else {
-                    console.log(`📦 [Archive Only] Payment transaction_id=${p.transaction_id} already archived, skipping.`);
+                    // Reactivate credit if it exists (for subsequent device swaps)
+                    const creditId = archivedCheck.rows[0].id;
+                    const wasInvalidated = !!archivedCheck.rows[0].is_invalidated;
+                    await query(
+                        `UPDATE archived_fee_payments
+                         SET is_invalidated = FALSE,
+                             invalidated_at = NULL,
+                             invalidated_reason = NULL,
+                             original_asset_tag = COALESCE($2, original_asset_tag),
+                             archived_at = NOW()
+                         WHERE id = $1`,
+                        [creditId, currentAssetTag]
+                    );
+                    console.log(`📦 [Archive Only] Reactivated existing credit transaction_id=${p.transaction_id} (was_invalidated=${wasInvalidated})`);
                 }
             }
 
