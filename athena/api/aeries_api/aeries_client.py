@@ -1,7 +1,9 @@
 # athena/api/aeries_api/aeries_client.py
 
 import configparser
+import json
 import os
+import requests
 from typing import Dict, Optional, List, Union
 from datetime import datetime, date, timedelta
 from .. import _API_Path
@@ -85,15 +87,65 @@ class AeriesAPI:
     def _read_config(self) -> Dict[str, str]:
         """
         Read configuration with the following precedence:
-        1) Environment variables (AERIES_ENDPOINT, AERIES_API_KEY), optionally
+        1) Account JSON via environment:
+           - `AERIES_ACCOUNT_JSON`: Inline JSON string
+           - `AERIES_ACCOUNT_FILE`: Path to JSON file or HTTPS URL
+        2) Environment variables (AERIES_ENDPOINT, AERIES_API_KEY), optionally
            populated from a .env file if present
-        2) Legacy config files: config.ini (ENDPOINT) and auth.ini (KEY)
+        3) Legacy config files: config.ini (ENDPOINT) and auth.ini (KEY)
         
         Returns:
             Dict[str, str]: Configuration dictionary with endpoint and api_key
         """
         # First, try environment variables (and load from .env if available)
         self._load_env_file()
+
+        # Prefer JSON-based account configuration if provided
+        acct_json_raw = os.environ.get('AERIES_ACCOUNT_JSON')
+        acct_file = os.environ.get('AERIES_ACCOUNT_FILE')
+
+        def normalize_account(data: Dict[str, str]) -> Dict[str, str]:
+            # Accept common key variants
+            lookup = {k.lower(): v for k, v in (data or {}).items()}
+            endpoint = (
+                lookup.get('endpoint')
+                or lookup.get('url')
+                or lookup.get('base_url')
+                or lookup.get('aeries_endpoint')
+            )
+            api_key = (
+                lookup.get('api_key')
+                or lookup.get('key')
+                or lookup.get('aeries_key')
+                or lookup.get('aeries_api_key')
+            )
+            if not endpoint or not api_key:
+                raise ValueError('Aeries account config is missing required fields: endpoint and api_key')
+            return {'endpoint': str(endpoint), 'api_key': str(api_key)}
+
+        if acct_json_raw:
+            try:
+                acct_data = json.loads(acct_json_raw)
+            except json.JSONDecodeError as e:
+                raise ValueError(f'AERIES_ACCOUNT_JSON is not valid JSON: {e}')
+            return normalize_account(acct_data)
+
+        if acct_file:
+            try:
+                if acct_file.startswith('http://') or acct_file.startswith('https://'):
+                    # Remote fetch
+                    resp = requests.get(acct_file, timeout=10)
+                    resp.raise_for_status()
+                    acct_data = resp.json()
+                else:
+                    # Local file
+                    if not os.path.isfile(acct_file):
+                        raise FileNotFoundError(f'AERIES_ACCOUNT_FILE not found: {acct_file}')
+                    with open(acct_file, 'r', encoding='utf-8') as f:
+                        acct_data = json.load(f)
+            except Exception as e:
+                raise ValueError(f'Failed to load AERIES_ACCOUNT_FILE: {e}')
+            return normalize_account(acct_data)
 
         env_endpoint = os.environ.get('AERIES_ENDPOINT')
         env_api_key = os.environ.get('AERIES_API_KEY')
