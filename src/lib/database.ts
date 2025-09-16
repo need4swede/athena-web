@@ -1,5 +1,5 @@
 // Frontend API client for backend server
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:36464/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface DatabaseUser {
     id: number;
@@ -92,8 +92,10 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
 // Initialize database connection (no-op for frontend)
 export async function connectToDatabase(): Promise<boolean> {
     try {
-        // Test API connection
-        await fetch(`${API_BASE_URL.replace('/api', '')}/health`);
+        const res = await fetch(`${API_BASE_URL}/health`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json().catch(() => null);
+        if (!body || body.status !== 'OK') throw new Error('Unexpected health payload');
         console.log('✅ Connected to backend API');
         return true;
     } catch (error) {

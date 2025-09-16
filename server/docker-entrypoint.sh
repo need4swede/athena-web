@@ -212,6 +212,43 @@ fi
 echo "🐍 [DEBUG] Aeries: AERIES_ENDPOINT=${AERIES_ENDPOINT}"
 if [ -n "$AERIES_API_KEY" ]; then echo "🐍 [DEBUG] Aeries: API key loaded"; else echo "⚠️ Aeries API key not set"; fi
 
+# Database auto-initialize (optional, enabled by DB_AUTO_INIT=true)
+if [ "${DB_AUTO_INIT}" = "true" ]; then
+  echo "🐘 [DB] Auto-initialization enabled. Preparing to check schema..."
+  export PGPASSWORD="${DB_PASSWORD}"
+  DBH="${DB_HOST:-postgres}"
+  DBP="${DB_PORT:-5432}"
+  DBN="${DB_NAME:-athena_db}"
+  DBU="${DB_USER:-postgres}"
+
+  # Ensure psql client exists
+  if command -v psql >/dev/null 2>&1; then
+    echo "🐘 [DB] psql client found"
+  else
+    echo "❌ [DB] psql client not found in image; cannot auto-init"
+  fi
+
+  echo "🐘 [DB] Waiting for Postgres at $DBH:$DBP ..."
+  i=0; until pg_isready -h "$DBH" -p "$DBP" -U "$DBU" >/dev/null 2>&1; do i=$((i+1)); [ $i -gt 60 ] && echo "❌ [DB] Timed out waiting for Postgres" && break; sleep 2; done
+
+  echo "🐘 [DB] Checking if 'users' table exists..."
+  EXISTS=$(psql -h "$DBH" -p "$DBP" -U "$DBU" -d "$DBN" -tAc "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='users' LIMIT 1;" 2>/dev/null || true)
+  if [ "$EXISTS" = "1" ]; then
+    echo "✅ [DB] Database already initialized"
+  else
+    if [ -f "/app/database/init.sql" ]; then
+      echo "🚀 [DB] Applying /app/database/init.sql ..."
+      if psql -v ON_ERROR_STOP=1 -h "$DBH" -p "$DBP" -U "$DBU" -d "$DBN" -f "/app/database/init.sql"; then
+        echo "✅ [DB] Initialization complete"
+      else
+        echo "❌ [DB] Initialization failed"
+      fi
+    else
+      echo "⚠️ [DB] /app/database/init.sql not found in image; skipping"
+    fi
+  fi
+fi
+
 # Start the application
 echo "🐍 [DEBUG] Starting the application..."
 exec "$@"

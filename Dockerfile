@@ -29,8 +29,12 @@ FROM nginx:alpine
 # Copy the build output from the previous stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration for non-root user
-COPY nginx/nginx-nonroot.conf /etc/nginx/conf.d/default.conf
+# Provide nginx template; entrypoint will envsubst to conf.d/default.conf
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+
+# Inject runtime environment variables into sso-config.json
+COPY nginx/30-sso-config-envsubst.sh /docker-entrypoint.d/30-sso-config-envsubst.sh
+RUN chmod +x /docker-entrypoint.d/30-sso-config-envsubst.sh
 
 # Expose port 80
 EXPOSE 80

@@ -42,6 +42,10 @@ validateJwtSecretOrExit();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+// Behind reverse proxies (Caddy, Nginx), trust X-Forwarded-* headers
+// This prevents express-rate-limit from throwing on X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
     crossOriginEmbedderPolicy: false,
@@ -130,6 +134,16 @@ if ((process.env.NODE_ENV || 'development') !== 'production') {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        timestamp: getDatabaseTimestamp(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+    });
+});
+
+// Mirror health under /api for reverse-proxy setups that only forward /api
+app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
         timestamp: getDatabaseTimestamp(),

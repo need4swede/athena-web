@@ -1,0 +1,106 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: athena-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: ${TZ}
+      PGTZ: ${TZ}
+    volumes:
+      - athena_db:/var/lib/postgresql/data
+    # Optional: provide an init SQL on first run by uncommenting next line and placing init.sql next to this file
+    # - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    image: need4swede/athena-web-backend:latest
+    container_name: athena-backend
+    environment:
+      TZ: ${TZ}
+      NODE_ENV: production
+      PORT: ${BACKEND_PORT}
+      DB_AUTO_INIT: "true"
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      ENABLE_GOOGLE_NOTES: ${ENABLE_GOOGLE_NOTES}
+      ENABLE_DB_ADMIN: ${ENABLE_DB_ADMIN}
+      SSO_MICROSOFT_CLIENT_ID: ${SSO_MICROSOFT_CLIENT_ID}
+      SSO_MICROSOFT_CLIENT_SECRET: ${SSO_MICROSOFT_CLIENT_SECRET}
+      SSO_MICROSOFT_TENANT_ID: ${SSO_MICROSOFT_TENANT_ID}
+      SSO_GOOGLE_CLIENT_ID: ${SSO_GOOGLE_CLIENT_ID}
+      SSO_GOOGLE_CLIENT_SECRET: ${SSO_GOOGLE_CLIENT_SECRET}
+      SSO_GITHUB_CLIENT_ID: ${SSO_GITHUB_CLIENT_ID}
+      SSO_GITHUB_CLIENT_SECRET: ${SSO_GITHUB_CLIENT_SECRET}
+      SSO_LINKEDIN_CLIENT_ID: ${SSO_LINKEDIN_CLIENT_ID}
+      SSO_LINKEDIN_CLIENT_SECRET: ${SSO_LINKEDIN_CLIENT_SECRET}
+      SSO_TWITTER_CLIENT_ID: ${SSO_TWITTER_CLIENT_ID}
+      SSO_TWITTER_CLIENT_SECRET: ${SSO_TWITTER_CLIENT_SECRET}
+      SSO_ALLOWED_DOMAINS: ${SSO_ALLOWED_DOMAINS}
+      SSO_ALLOWED_EMAILS: ${SSO_ALLOWED_EMAILS}
+      AERIES_ACCOUNT_FILE: ${AERIES_ACCOUNT_FILE}
+      GOOGLE_SCOPES: ${GOOGLE_SCOPES}
+      GOOGLE_SERVICE_ACCOUNT_FILE: ${GOOGLE_SERVICE_ACCOUNT_FILE}
+      GOOGLE_ADMIN_EMAIL: ${GOOGLE_ADMIN_EMAIL}
+      ACCOUNT_FILE_HEADERS: ${ACCOUNT_FILE_HEADERS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./files:/app/files
+    expose:
+      - "${BACKEND_PORT}"
+    networks:
+      default:
+        aliases:
+          - backend
+          - athena-backend
+    restart: unless-stopped
+
+  frontend:
+    image: need4swede/athena-web-frontend:latest
+    container_name: athena-frontend
+    environment:
+      TZ: ${TZ}
+      NODE_ENV: production
+      # Backend connection for nginx template
+      BACKEND_HOST: backend
+      BACKEND_PORT: ${BACKEND_PORT}
+      LISTEN_PORT: 6464
+      # Pass SSO variables so nginx can envsubst sso-config.json at runtime
+      SSO_MICROSOFT_CLIENT_ID: ${SSO_MICROSOFT_CLIENT_ID}
+      SSO_MICROSOFT_CLIENT_SECRET: ${SSO_MICROSOFT_CLIENT_SECRET}
+      SSO_MICROSOFT_TENANT_ID: ${SSO_MICROSOFT_TENANT_ID}
+      SSO_GOOGLE_CLIENT_ID: ${SSO_GOOGLE_CLIENT_ID}
+      SSO_GOOGLE_CLIENT_SECRET: ${SSO_GOOGLE_CLIENT_SECRET}
+      SSO_GITHUB_CLIENT_ID: ${SSO_GITHUB_CLIENT_ID}
+      SSO_GITHUB_CLIENT_SECRET: ${SSO_GITHUB_CLIENT_SECRET}
+      SSO_LINKEDIN_CLIENT_ID: ${SSO_LINKEDIN_CLIENT_ID}
+      SSO_LINKEDIN_CLIENT_SECRET: ${SSO_LINKEDIN_CLIENT_SECRET}
+      SSO_TWITTER_CLIENT_ID: ${SSO_TWITTER_CLIENT_ID}
+      SSO_TWITTER_CLIENT_SECRET: ${SSO_TWITTER_CLIENT_SECRET}
+      SSO_ALLOWED_DOMAINS: ${SSO_ALLOWED_DOMAINS}
+      SSO_ALLOWED_EMAILS: ${SSO_ALLOWED_EMAILS}
+    ports:
+      - "6464:6464" # nginx in image listens on 6464
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  athena_db: {}

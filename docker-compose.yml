@@ -14,10 +14,11 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      start_period: 45s
+      retries: 15
 
   backend:
     build:
@@ -95,6 +96,22 @@ services:
       - TZ=${TZ}
       - NODE_ENV=${NODE_ENV}
       - VITE_API_URL=${VITE_API_URL}
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=${BACKEND_PORT}
+      - LISTEN_PORT=${FRONTEND_PORT}
+      - SSO_MICROSOFT_CLIENT_ID=${SSO_MICROSOFT_CLIENT_ID}
+      - SSO_MICROSOFT_CLIENT_SECRET=${SSO_MICROSOFT_CLIENT_SECRET}
+      - SSO_MICROSOFT_TENANT_ID=${SSO_MICROSOFT_TENANT_ID}
+      - SSO_GOOGLE_CLIENT_ID=${SSO_GOOGLE_CLIENT_ID}
+      - SSO_GOOGLE_CLIENT_SECRET=${SSO_GOOGLE_CLIENT_SECRET}
+      - SSO_GITHUB_CLIENT_ID=${SSO_GITHUB_CLIENT_ID}
+      - SSO_GITHUB_CLIENT_SECRET=${SSO_GITHUB_CLIENT_SECRET}
+      - SSO_LINKEDIN_CLIENT_ID=${SSO_LINKEDIN_CLIENT_ID}
+      - SSO_LINKEDIN_CLIENT_SECRET=${SSO_LINKEDIN_CLIENT_SECRET}
+      - SSO_TWITTER_CLIENT_ID=${SSO_TWITTER_CLIENT_ID}
+      - SSO_TWITTER_CLIENT_SECRET=${SSO_TWITTER_CLIENT_SECRET}
+      - SSO_ALLOWED_DOMAINS=${SSO_ALLOWED_DOMAINS}
+      - SSO_ALLOWED_EMAILS=${SSO_ALLOWED_EMAILS}
     depends_on:
       - backend
     restart: unless-stopped

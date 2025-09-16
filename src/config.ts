@@ -8,6 +8,6 @@ export const feeAndCostConfig = {
 
 export const apiConfig = {
     // Get the base API URL and remove the /api suffix to get the backend base URL
-    backendBaseUrl: (import.meta.env.VITE_API_URL || 'http://localhost:36464/api').replace('/api', ''),
-    apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:36464/api'
+    backendBaseUrl: (import.meta.env.VITE_API_URL || '/api').replace('/api', ''),
+    apiUrl: import.meta.env.VITE_API_URL || '/api'
 };

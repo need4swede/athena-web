@@ -34,6 +34,9 @@ RUN npm ci
 # Copy backend source code with correct ownership
 COPY --chown=nodejs:nodejs server/. .
 
+# Include database SQL and migrations in the image for self-initialization
+COPY --chown=nodejs:nodejs database /app/database
+
 # Bake Athena (Python modules and scripts) into the image
 COPY --chown=nodejs:nodejs athena /app/athena
 
