@@ -2,6 +2,10 @@ server {
     listen ${LISTEN_PORT};
     server_name localhost;
 
+    # Allow large uploads (DB restore, backups)
+    client_max_body_size 1024m;
+    client_body_timeout 300s;
+
     # Use /tmp for writable directories when running as non-root
     client_body_temp_path /tmp/client_body_temp;
     proxy_temp_path /tmp/proxy_temp;
@@ -59,6 +63,8 @@ server {
     location /api/ {
         proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
         proxy_http_version 1.1;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
@@ -72,6 +78,8 @@ server {
     location /files/ {
         proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
         proxy_http_version 1.1;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
