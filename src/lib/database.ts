@@ -6,6 +6,8 @@ export interface DatabaseUser {
     email: string;
     name: string;
     role: 'super_admin' | 'admin' | 'user';
+    provider?: string | null;
+    last_login?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -116,31 +118,41 @@ export async function isFirstUser(): Promise<boolean> {
 }
 
 // User management functions
-export async function createOrUpdateUser(email: string, name: string): Promise<DatabaseUser> {
-    console.log('💾 [createOrUpdateUser] Called with:', { email, name });
+export interface AuthSessionResponse {
+    token?: string;
+    user: DatabaseUser & {
+        avatar?: string | null;
+        provider?: string | null;
+        isAdmin?: boolean;
+        isSuperAdmin?: boolean;
+        lastLogin?: string | Date | null;
+    };
+}
 
+export async function authenticateWithTinyAuth(payload: { email?: string; name?: string } = {}): Promise<AuthSessionResponse> {
     try {
+        const body = Object.keys(payload).length > 0 ? JSON.stringify(payload) : '{}';
         const response = await apiRequest('/auth/sso-login', {
             method: 'POST',
-            body: JSON.stringify({
-                email,
-                name,
-                provider: 'microsoft',
-                avatar: null
-            }),
+            body,
         });
 
-        // Store the token
         if (response.token) {
             localStorage.setItem('auth_token', response.token);
         }
 
-        console.log('💾 [createOrUpdateUser] Success:', response.user);
-        return response.user;
+        return response as AuthSessionResponse;
     } catch (error) {
-        console.error('💾 [createOrUpdateUser] Error:', error);
+        console.error('💾 [authenticateWithTinyAuth] Error:', error);
         throw error;
     }
+}
+
+export async function createOrUpdateUser(email?: string, name?: string): Promise<DatabaseUser> {
+    console.warn('ℹ️ [createOrUpdateUser] Deprecated usage detected. Falling back to TinyAuth session initialization.');
+    const response = await authenticateWithTinyAuth({ email, name });
+    console.log('💾 [createOrUpdateUser] Session response user:', response.user);
+    return response.user;
 }
 
 export async function getUserByEmail(email: string): Promise<DatabaseUser | null> {

@@ -1,51 +1,37 @@
 import { z } from "zod";
 
-// User types
+export type UserRole = 'super_admin' | 'admin' | 'user';
+
 export interface User {
     id: string | number;
     name: string;
     email: string;
-    avatar?: string;
-    avatarUrl?: string;
-    provider: string;
-    providerId?: string;
-    role?: 'super_admin' | 'admin' | 'user';
+    avatar?: string | null;
+    provider?: string | null;
+    role: UserRole;
     isAdmin: boolean;
     isSuperAdmin?: boolean;
-    lastLogin: Date;
-    organizationId?: string;
-    microsoftId?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+    lastLogin?: string | Date | null;
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
 }
 
-export type UserRole = 'super_admin' | 'admin' | 'user';
+export const providerLogoSchema = z.object({
+    enabled: z.boolean().optional(),
+    iconName: z.string().optional(),
+    customUrl: z.string().optional(),
+    centerText: z.boolean().optional(),
+}).optional();
 
-// SSO Configuration type for frontend
+export const providerConfigSchema = z.object({
+    enabled: z.boolean(),
+    displayName: z.string(),
+    buttonText: z.string().optional(),
+    logo: providerLogoSchema,
+});
+
 export const ssoConfigSchema = z.object({
-    providers: z.record(z.object({
-        enabled: z.boolean(),
-        clientId: z.string().optional(),
-        clientSecret: z.string().optional(),
-        tenantId: z.string().optional(),
-        displayName: z.string(),
-        buttonText: z.string().optional(),
-        logo: z.object({
-            enabled: z.boolean().default(true),
-            iconName: z.string().optional(), // lucide icon name or 'custom'
-            customUrl: z.string().optional(), // URL for custom logo
-            centerText: z.boolean().default(false), // center text when no logo
-        }).optional(),
-    })),
-    accessControl: z.object({
-        domainMode: z.enum(["allow-all", "whitelist", "blacklist"]),
-        emailMode: z.enum(["allow-all", "whitelist", "blacklist"]),
-        allowedDomains: z.array(z.string()).optional(),
-        blockedDomains: z.array(z.string()).optional(),
-        allowedEmails: z.array(z.string()).optional(),
-        blockedEmails: z.array(z.string()).optional(),
-        requireEmailVerification: z.boolean().optional(),
-    }),
+    providers: z.record(providerConfigSchema),
     branding: z.object({
         companyName: z.string(),
         logoUrl: z.string().optional(),
@@ -55,55 +41,31 @@ export const ssoConfigSchema = z.object({
         customCss: z.string().optional(),
         footer: z.string().optional(),
     }),
+    accessControl: z.object({
+        domainMode: z.string(),
+        emailMode: z.string(),
+        allowedDomains: z.array(z.string()).optional(),
+        blockedDomains: z.array(z.string()).optional(),
+        allowedEmails: z.array(z.string()).optional(),
+        blockedEmails: z.array(z.string()).optional(),
+        requireEmailVerification: z.boolean().optional(),
+    }),
     features: z.object({
-        enableEmailLogin: z.boolean().default(true),
-        enableRememberMe: z.boolean().default(true),
-        sessionTimeout: z.number().default(604800),
-        allowSelfRegistration: z.boolean().default(true),
+        enableEmailLogin: z.boolean().optional(),
+        enableRememberMe: z.boolean().optional(),
+        sessionTimeout: z.number().optional(),
+        allowSelfRegistration: z.boolean().optional(),
     }).optional(),
     security: z.object({
-        requireHttps: z.boolean().default(false),
-        enableRateLimit: z.boolean().default(true),
-        maxLoginAttempts: z.number().default(5),
-        lockoutDuration: z.number().default(900),
+        requireHttps: z.boolean().optional(),
+        enableRateLimit: z.boolean().optional(),
+        maxLoginAttempts: z.number().optional(),
+        lockoutDuration: z.number().optional(),
     }).optional(),
 });
 
 export type SSOConfig = z.infer<typeof ssoConfigSchema>;
 
-// Microsoft OAuth specific types
-export interface MicrosoftTokenResponse {
-    access_token: string;
-    id_token: string;
-    refresh_token: string;
-    token_type: string;
-    expires_in: number;
-}
-
-export interface MicrosoftUserInfo {
-    id: string;
-    displayName: string;
-    mail: string;
-    userPrincipalName: string;
-    givenName?: string;
-    surname?: string;
-    jobTitle?: string;
-    mobilePhone?: string;
-    businessPhones?: string[];
-}
-
-// OAuth callback data interface
-export interface OAuthCallbackData {
-    code?: string;
-    state?: string;
-    email?: string;
-    name?: string;
-    avatar?: string;
-    providerId?: string;
-    accessToken?: string;
-}
-
-// Organization type
 export interface Organization {
     id: string;
     name: string;

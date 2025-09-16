@@ -1,69 +1,13 @@
 {
     "providers": {
-        "google": {
-            "enabled": false,
-            "displayName": "Google",
-            "clientId": "${SSO_GOOGLE_CLIENT_ID}",
-            "clientSecret": "${SSO_GOOGLE_CLIENT_SECRET}",
-            "buttonText": "",
-            "logo": {
-                "enabled": true,
-                "iconName": "custom",
-                "customUrl": "https://developers.google.com/identity/images/g-logo.png",
-                "centerText": false
-            }
-        },
-        "github": {
-            "enabled": false,
-            "displayName": "GitHub",
-            "clientId": "${SSO_GITHUB_CLIENT_ID}",
-            "clientSecret": "${SSO_GITHUB_CLIENT_SECRET}",
-            "buttonText": "",
-            "logo": {
-                "enabled": true,
-                "iconName": "custom",
-                "customUrl": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                "centerText": false
-            }
-        },
-        "microsoft": {
+        "tinyauth": {
             "enabled": true,
-            "displayName": "Microsoft",
-            "clientId": "${SSO_MICROSOFT_CLIENT_ID}",
-            "clientSecret": "${SSO_MICROSOFT_CLIENT_SECRET}",
-            "tenantId": "${SSO_MICROSOFT_TENANT_ID}",
-            "buttonText": "Sign-in with your District email",
+            "displayName": "TinyAuth",
+            "buttonText": "Automatically via TinyAuth",
             "logo": {
-                "enabled": false,
-                "iconName": "custom",
-                "customUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/512px-Microsoft_logo.svg.png",
+                "enabled": true,
+                "iconName": "ShieldCheck",
                 "centerText": true
-            }
-        },
-        "linkedin": {
-            "enabled": false,
-            "displayName": "LinkedIn",
-            "clientId": "${SSO_LINKEDIN_CLIENT_ID}",
-            "clientSecret": "${SSO_LINKEDIN_CLIENT_SECRET}",
-            "buttonText": "",
-            "logo": {
-                "enabled": true,
-                "iconName": "custom",
-                "customUrl": "https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg",
-                "centerText": false
-            }
-        },
-        "twitter": {
-            "enabled": false,
-            "displayName": "Twitter",
-            "clientId": "${SSO_TWITTER_CLIENT_ID}",
-            "clientSecret": "${SSO_TWITTER_CLIENT_SECRET}",
-            "buttonText": "",
-            "logo": {
-                "enabled": true,
-                "iconName": "custom",
-                "customUrl": "https://abs.twimg.com/responsive-web/client-web/icon-svg.168b89da.svg",
-                "centerText": false
             }
         }
     },
@@ -81,13 +25,13 @@
         "loginTitle": "Athena",
         "loginSubtitle": "Asset & Directory Service for Education",
         "customCss": ".h-16 { height: 8rem !important; } .shadow-xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; }",
-        "footer": "Secured via Heimdall SSO"
+        "footer": "Secured via TinyAuth SSO"
     },
     "features": {
         "enableEmailLogin": false,
         "enableRememberMe": true,
         "sessionTimeout": 604800,
-        "allowSelfRegistration": true
+        "allowSelfRegistration": false
     },
     "security": {
         "requireHttps": false,

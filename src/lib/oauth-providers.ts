@@ -1,4 +1,4 @@
-import { Github, Mail, Linkedin, Twitter, Chrome, Building2 } from "lucide-react";
+import { Github, Mail, Linkedin, Twitter, Chrome, Building2, ShieldCheck } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 
 // Define provider configurations
@@ -32,6 +32,12 @@ export const oauthProviders = {
         displayName: "Twitter",
         icon: Twitter,
         color: "text-blue-400"
+    },
+    tinyauth: {
+        name: "tinyauth",
+        displayName: "TinyAuth",
+        icon: ShieldCheck,
+        color: "text-emerald-600"
     }
 };
 

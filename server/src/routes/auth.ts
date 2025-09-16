@@ -1,6 +1,5 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { body, validationResult } from 'express-validator';
 import { createOrUpdateUser, getUserByEmail } from '../database';
 import { ssoConfigService } from '../services/sso-config.service';
 import { getJwtSecretUnsafe } from '../utils/jwt';
@@ -10,26 +9,99 @@ const router = express.Router();
 // JWT secret (validated at startup for production)
 const JWT_SECRET = getJwtSecretUnsafe();
 
+interface TinyAuthIdentity {
+    email: string;
+    name: string;
+    username?: string | null;
+    provider: string;
+    source: 'tinyauth' | 'dev' | 'legacy';
+}
+
+function resolveTinyAuthIdentity(req: express.Request): TinyAuthIdentity | null {
+    const headerUser = (req.headers['remote-user'] as string | undefined)?.trim();
+    const headerName = (req.headers['remote-name'] as string | undefined)?.trim();
+    const headerEmail = (req.headers['remote-email'] as string | undefined)?.trim();
+
+    if (headerEmail) {
+        return {
+            email: headerEmail.toLowerCase(),
+            name: headerName || headerEmail.split('@')[0],
+            username: headerUser || null,
+            provider: 'tinyauth',
+            source: 'tinyauth'
+        };
+    }
+
+    if (process.env.ALLOW_DEV_AUTH === 'true') {
+        const fallbackEmail = (process.env.DEV_AUTH_EMAIL || req.body?.email || 'devadmin@example.com').trim().toLowerCase();
+        const fallbackName = (process.env.DEV_AUTH_NAME || req.body?.name || 'Dev Admin').trim();
+        const fallbackUsername = (process.env.DEV_AUTH_USERNAME || req.body?.username || 'devadmin').trim();
+
+        return {
+            email: fallbackEmail,
+            name: fallbackName,
+            username: fallbackUsername,
+            provider: 'dev',
+            source: req.body?.email ? 'legacy' : 'dev'
+        };
+    }
+
+    if (req.body?.email && req.body?.name) {
+        // Legacy fallback for OAuth-based flows. Log heavily so we can detect unexpected usage.
+        console.warn('⚠️ [SSO Login] Legacy body-based login attempted without TinyAuth headers');
+        return {
+            email: String(req.body.email).trim().toLowerCase(),
+            name: String(req.body.name).trim(),
+            username: null,
+            provider: String(req.body.provider || 'oauth'),
+            source: 'legacy'
+        };
+    }
+
+    return null;
+}
+
+function formatFrontendUser(user: any, provider: string, avatar?: string | null) {
+    const role = user.role || (user.is_admin ? 'admin' : 'user');
+    const isAdmin = role === 'admin' || role === 'super_admin';
+    const isSuperAdmin = role === 'super_admin';
+
+    return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: avatar || null,
+        provider,
+        role,
+        isAdmin,
+        isSuperAdmin,
+        lastLogin: user.last_login ? new Date(user.last_login) : new Date()
+    };
+}
+
 // SSO Login endpoint
-router.post('/sso-login', [
-    body('email').isEmail().normalizeEmail(),
-    body('name').trim().isLength({ min: 1 }),
-    body('provider').trim().isLength({ min: 1 }),
-], async (req: express.Request, res: express.Response): Promise<void> => {
+router.post('/sso-login', async (req: express.Request, res: express.Response): Promise<void> => {
     try {
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(400).json({
-                error: 'Validation failed',
-                details: errors.array()
+        const identity = resolveTinyAuthIdentity(req);
+
+        if (!identity) {
+            console.log('❌ [SSO Login] TinyAuth headers missing and no fallback available');
+            res.status(401).json({
+                error: 'Authentication headers not provided',
+                message: 'TinyAuth did not supply authentication headers. Ensure requests flow through the TinyAuth proxy.'
             });
             return;
         }
 
-        const { email, name, provider, avatar } = req.body;
+        const { email, name, provider, source } = identity;
 
-        console.log('🔐 [SSO Login] Processing login for:', { email, name, provider });
+        console.log('🔐 [SSO Login] Processing login via TinyAuth:', {
+            email,
+            name,
+            provider,
+            source,
+            hasRemoteHeaders: source === 'tinyauth'
+        });
 
         // Check access control based on SSO configuration
         const isAllowed = ssoConfigService.checkAccessControl(email);
@@ -43,7 +115,7 @@ router.post('/sso-login', [
         }
 
         // Create or update user in database (let the function determine admin status)
-        const user = await createOrUpdateUser(email, name);
+        const user = await createOrUpdateUser(email, name, { provider });
 
         // Generate JWT token
         const token = jwt.sign(
@@ -58,17 +130,7 @@ router.post('/sso-login', [
         );
 
         // Format user for frontend
-        const frontendUser = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            avatar: avatar || null,
-            provider: provider,
-            role: user.role,
-            isAdmin: user.role === 'admin' || user.role === 'super_admin',
-            isSuperAdmin: user.role === 'super_admin',
-            lastLogin: new Date()
-        };
+        const frontendUser = formatFrontendUser(user, provider);
 
         console.log('✅ [SSO Login] Login successful for:', user.email);
 
@@ -108,17 +170,7 @@ router.get('/verify', async (req: express.Request, res: express.Response): Promi
             }
 
             // Format user for frontend
-            const frontendUser = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                avatar: null, // We don't store avatars in DB yet
-                provider: "microsoft", // We don't store provider in current schema
-                role: user.role,
-                isAdmin: user.role === 'admin' || user.role === 'super_admin',
-                isSuperAdmin: user.role === 'super_admin',
-                lastLogin: new Date()
-            };
+            const frontendUser = formatFrontendUser(user, user.provider || 'tinyauth');
 
             res.json({ user: frontendUser });
 

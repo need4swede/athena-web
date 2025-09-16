@@ -161,6 +161,11 @@ class SSOConfigService {
             return true; // Disabled providers don't need validation
         }
 
+        if (providerName === 'tinyauth') {
+            // TinyAuth is handled upstream and does not require client credentials
+            return true;
+        }
+
         const clientId = provider.clientId || '';
         const clientSecret = provider.clientSecret || '';
 

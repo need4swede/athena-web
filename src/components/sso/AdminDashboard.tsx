@@ -153,6 +153,10 @@ export function AdminDashboard() {
 
   const handleProviderToggle = async (providerName: string, enabled: boolean) => {
     if (!ssoConfig) return;
+    if (providerName === 'tinyauth') {
+      console.info('TinyAuth provider is managed by the reverse proxy and cannot be toggled from the UI.');
+      return;
+    }
 
     const updatedConfig = {
       ...ssoConfig,
@@ -174,6 +178,10 @@ export function AdminDashboard() {
 
     const formData = new FormData(e.currentTarget);
     const providerName = formData.get("providerName") as string;
+    if (providerName === 'tinyauth') {
+      console.info('TinyAuth configuration is controlled outside of Athena.');
+      return;
+    }
     const clientId = formData.get("clientId") as string;
     const clientSecret = formData.get("clientSecret") as string;
     const tenantId = formData.get("tenantId") as string;
@@ -253,12 +261,33 @@ export function AdminDashboard() {
           <TabsContent value="providers" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>OAuth Providers</CardTitle>
+                <CardTitle>Authentication Providers</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {providers.map((provider) => {
                     const IconComponent = getProviderIcon(provider.name);
+                    const isTinyAuth = provider.name === 'tinyauth';
+
+                    if (isTinyAuth) {
+                      return (
+                        <Card key={provider.name} className="p-6 border-dashed border-emerald-300 bg-emerald-50/40">
+                          <div className="flex items-center space-x-3 mb-4">
+                            <IconComponent className="w-6 h-6 text-emerald-600" />
+                            <div>
+                              <span className="font-semibold text-emerald-700">TinyAuth (reverse proxy)</span>
+                              <p className="text-xs text-emerald-700/80">Authentication handled upstream via trusted headers.</p>
+                            </div>
+                          </div>
+                          <ul className="text-sm space-y-2 text-gray-700">
+                            <li>• Enabled: {provider.enabled ? 'Yes' : 'No'}</li>
+                            <li>• Headers required: <code className="bg-white/60 px-1 py-0.5 rounded">remote-user</code>, <code className="bg-white/60 px-1 py-0.5 rounded">remote-name</code>, <code className="bg-white/60 px-1 py-0.5 rounded">remote-email</code></li>
+                            <li>• Configure access in your TinyAuth deployment or proxy.</li>
+                          </ul>
+                        </Card>
+                      );
+                    }
+
                     return (
                       <Card key={provider.name} className="p-6">
                         <div className="flex items-center justify-between mb-4">
@@ -277,7 +306,7 @@ export function AdminDashboard() {
                             <Label className="text-xs">Client ID</Label>
                             <Input
                               name="clientId"
-                              defaultValue={provider.clientId || ""}
+                              defaultValue={(provider as any).clientId || ""}
                               placeholder="Enter client ID"
                               className="h-8 text-sm"
                             />
@@ -287,7 +316,7 @@ export function AdminDashboard() {
                             <Input
                               name="clientSecret"
                               type="password"
-                              defaultValue={provider.clientSecret || ""}
+                              defaultValue={(provider as any).clientSecret || ""}
                               placeholder="Enter client secret"
                               className="h-8 text-sm"
                             />
@@ -297,7 +326,7 @@ export function AdminDashboard() {
                               <Label className="text-xs">Tenant ID</Label>
                               <Input
                                 name="tenantId"
-                                defaultValue={provider.tenantId || ""}
+                                defaultValue={(provider as any).tenantId || ""}
                                 placeholder="Enter tenant ID"
                                 className="h-8 text-sm"
                               />

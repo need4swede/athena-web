@@ -6,8 +6,15 @@ export interface DatabaseUser {
     email: string;
     name: string;
     role: 'super_admin' | 'admin' | 'user';
+    provider?: string | null;
+    last_login?: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export interface CreateOrUpdateUserOptions {
+    role?: 'super_admin' | 'admin' | 'user';
+    provider?: string | null;
 }
 
 export interface AeriesPermissions {
@@ -157,8 +164,13 @@ export async function isFirstUser(): Promise<boolean> {
 }
 
 // User management functions
-export async function createOrUpdateUser(email: string, name: string, role?: 'super_admin' | 'admin' | 'user'): Promise<DatabaseUser> {
-    console.log('💾 [createOrUpdateUser] Called with:', { email, name, role });
+export async function createOrUpdateUser(
+    email: string,
+    name: string,
+    options: CreateOrUpdateUserOptions = {}
+): Promise<DatabaseUser> {
+    const { role, provider } = options;
+    console.log('💾 [createOrUpdateUser] Called with:', { email, name, role, provider });
 
     try {
         // Check if user exists
@@ -167,8 +179,8 @@ export async function createOrUpdateUser(email: string, name: string, role?: 'su
         if (existingUserResult.rows.length > 0) {
             // Update existing user
             const updateResult = await query(
-                'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2 RETURNING *',
-                [name, email]
+                'UPDATE users SET name = $1, provider = COALESCE($3, provider), last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE email = $2 RETURNING *',
+                [name, email, provider ?? null]
             );
             console.log('💾 [createOrUpdateUser] Updated existing user:', updateResult.rows[0]);
             return updateResult.rows[0];
@@ -183,8 +195,8 @@ export async function createOrUpdateUser(email: string, name: string, role?: 'su
 
             // Create new user
             const insertResult = await query(
-                'INSERT INTO users (email, name, role) VALUES ($1, $2, $3) RETURNING *',
-                [email, name, userRole]
+                'INSERT INTO users (email, name, role, provider, last_login) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING *',
+                [email, name, userRole, provider ?? null]
             );
             console.log('💾 [createOrUpdateUser] Created new user:', insertResult.rows[0]);
             return insertResult.rows[0];
