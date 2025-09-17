@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { body, validationResult, param } from 'express-validator';
+import rateLimit from 'express-rate-limit';
 import { query } from '../database';
 import jwt from 'jsonwebtoken';
 import path from 'path';
@@ -10,13 +11,65 @@ const router = express.Router();
 
 const JWT_SECRET = getJwtSecretUnsafe();
 
+const portalLoginLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    }
+});
+
+let portalAuditTableEnsured = false;
+async function ensurePortalLoginAuditTable(): Promise<void> {
+    if (portalAuditTableEnsured) {
+        return;
+    }
+    await query(`CREATE TABLE IF NOT EXISTS portal_login_attempts (
+        id SERIAL PRIMARY KEY,
+        serial_number VARCHAR(255),
+        student_id VARCHAR(255),
+        success BOOLEAN NOT NULL,
+        ip_address VARCHAR(255),
+        user_agent TEXT,
+        reason TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )`);
+    portalAuditTableEnsured = true;
+}
+
+async function logPortalLoginAttempt(serialNumber: string | null, studentId: string | null, success: boolean, ip: string, userAgent: string, reason?: string): Promise<void> {
+    try {
+        await ensurePortalLoginAuditTable();
+        await query(
+            `INSERT INTO portal_login_attempts (serial_number, student_id, success, ip_address, user_agent, reason)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [serialNumber, studentId, success, ip, userAgent, reason || null]
+        );
+    } catch (error) {
+        console.error('⚠️ Failed to record portal login attempt:', error);
+    }
+}
+
 // Portal Login
-router.post('/login', [
+router.post('/login', portalLoginLimiter, [
     body('serial_number').isString().trim().notEmpty(),
     body('student_id').isString().trim().notEmpty()
 ], async (req: Request, res: Response): Promise<any> => {
     const errors = validationResult(req);
+    const ipAddress = typeof req.ip === 'string' ? req.ip : '';
+    const userAgent = req.get('user-agent') ?? 'unknown';
+
     if (!errors.isEmpty()) {
+        logPortalLoginAttempt(
+            req.body?.serial_number || null,
+            req.body?.student_id || null,
+            false,
+            ipAddress,
+            userAgent,
+            'validation_error'
+        ).catch(() => {});
         return res.status(400).json({ errors: errors.array() });
     }
 
@@ -35,6 +88,7 @@ router.post('/login', [
         );
 
         if (chromebookResult.rows.length === 0) {
+            logPortalLoginAttempt(serial_number, student_id, false, ipAddress, userAgent, 'invalid_credentials').catch(() => {});
             return res.status(401).json({ error: 'Invalid credentials or device not checked out' });
         }
 
@@ -49,10 +103,13 @@ router.post('/login', [
         );
 
         const token = jwt.sign({
+            type: 'portal_session',
             chromebook_id: device.chromebook_id,
             student_id: device.student_id,
             student_db_id: device.student_db_id,
         }, JWT_SECRET, { expiresIn: '1h' });
+
+        logPortalLoginAttempt(serial_number, student_id, true, ipAddress, userAgent, 'success').catch(() => {});
 
         return res.json({
             token,
@@ -75,6 +132,7 @@ router.post('/login', [
 
     } catch (error) {
         console.error('Portal login error:', error);
+        logPortalLoginAttempt(serial_number, student_id, false, ipAddress, userAgent, 'server_error').catch(() => {});
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -97,8 +155,24 @@ const authenticatePortalToken = (req: any, res: Response, next: any): void => {
             res.sendStatus(403);
             return;
         }
-        req.user = user;
-        next();
+        if (!user || typeof user !== 'object') {
+            res.sendStatus(403);
+            return;
+        }
+
+        if (!user.type || user.type === 'portal_session') {
+            req.user = { ...user, type: 'portal_session' };
+            next();
+            return;
+        }
+
+        if (user.type === 'portal_agreement') {
+            req.user = { ...user };
+            next();
+            return;
+        }
+
+        res.sendStatus(403);
     });
 };
 
@@ -189,24 +263,27 @@ router.get('/agreement', authenticatePortalToken, async (req: any, res: Response
 // Get Agreement URL
 router.get('/agreement-url', authenticatePortalToken, async (req: any, res: Response): Promise<any> => {
     try {
-        const { chromebook_id } = req.user;
+        const { chromebook_id, student_id, student_db_id } = req.user;
+        const variantParam = typeof req.query.variant === 'string' ? req.query.variant : 'pending';
+        const variant = variantParam === 'completed' ? 'completed' : 'pending';
 
         const result = await query(
             `SELECT
                 c.asset_tag, c.serial_number,
                 s.first_name, s.last_name, s.student_id,
+                s.id as student_db_id,
                 ch.action_date, ch.status as checkout_status
              FROM chromebooks c
              JOIN students s ON c.current_user_id = s.id
              JOIN checkout_history ch ON c.id = ch.chromebook_id
-             WHERE c.id = $1 AND ch.action = 'checkout' AND ch.status = 'pending'
+             WHERE c.id = $1 AND ch.action = 'checkout' AND ch.status = $2
              ORDER BY ch.action_date DESC
              LIMIT 1`,
-            [chromebook_id]
+            [chromebook_id, variant]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Pending agreement not found' });
+            return res.status(404).json({ error: variant === 'pending' ? 'Pending agreement not found' : 'Completed agreement not found' });
         }
 
         const data = result.rows[0];
@@ -215,8 +292,17 @@ router.get('/agreement-url', authenticatePortalToken, async (req: any, res: Resp
         const studentName = `${data.first_name}_${data.last_name}`.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
         const filename = `${dateStr}_${data.asset_tag}_${data.serial_number}_${studentName}_${data.student_id}.pdf`;
 
-        const url = `/files/agreements/pending/${filename}`;
-        return res.json({ url });
+        const agreementToken = jwt.sign({
+            type: 'portal_agreement',
+            chromebook_id,
+            student_id: student_id || data.student_id,
+            student_db_id: student_db_id || data.student_db_id,
+            filename,
+            variant
+        }, JWT_SECRET, { expiresIn: '5m' });
+
+        const url = `/api/portal/agreement?token=${agreementToken}`;
+        return res.json({ url, expiresIn: 300 });
 
     } catch (error) {
         console.error('Get agreement URL error:', error);

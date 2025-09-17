@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SignatureCapture, SignatureCaptureHandle } from '@/components/Checkout/SignatureCapture';
 import PDFViewer from '@/components/PDFViewer';
 import { toast } from '@/hooks/use-toast';
@@ -107,25 +107,37 @@ const MyDevicePageContent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const fetchAgreementUrl = useCallback(async (variant: 'pending' | 'completed' = 'pending') => {
+        if (!token) return null;
+
+        try {
+            const response = await fetch(`/api/portal/agreement-url?variant=${variant}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok || !data?.url) {
+                throw new Error(data?.error || 'Could not load agreement URL');
+            }
+
+            setError('');
+            return data.url as string;
+        } catch (err: any) {
+            setError(err.message);
+            return null;
+        }
+    }, [token]);
+
     useEffect(() => {
         if (showSignatureModal && token) {
-            const fetchAgreementUrl = async () => {
-                try {
-                    const response = await fetch('/api/portal/agreement-url', {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
-                    if (!response.ok) {
-                        throw new Error('Could not load agreement URL');
-                    }
-                    const data = await response.json();
-                    setAgreementUrl(data.url);
-                } catch (err: any) {
-                    setError(err.message);
+            setAgreementUrl(null);
+            fetchAgreementUrl('pending').then((url) => {
+                if (url) {
+                    setAgreementUrl(url);
                 }
-            };
-            fetchAgreementUrl();
+            });
         }
-    }, [showSignatureModal, token]);
+    }, [showSignatureModal, token, fetchAgreementUrl]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -239,7 +251,12 @@ const MyDevicePageContent = () => {
                                     </button>
                                 )}
                                 {deviceInfo.status === 'checked_out' && (
-                                     <button onClick={() => window.open(`/api/portal/agreement?token=${token}`, '_blank')} className="action-button secondary-action">
+                                     <button onClick={async () => {
+                                        const url = await fetchAgreementUrl('completed');
+                                        if (url) {
+                                            window.open(url, '_blank', 'noopener');
+                                        }
+                                     }} className="action-button secondary-action">
                                         View Signed Agreement
                                     </button>
                                 )}

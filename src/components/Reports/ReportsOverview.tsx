@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import TransactionReport from './TransactionReport';
+import CurrentCheckoutsReport from './CurrentCheckoutsReport';
 import { useState } from 'react';
 
 export const ReportsOverview: React.FC = () => {
@@ -117,6 +118,18 @@ export const ReportsOverview: React.FC = () => {
           </DialogHeader>
           <div className="mt-4">
             <TransactionReport />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Current Checkouts Report Modal */}
+      <Dialog open={selectedReport === 'checkouts'} onOpenChange={(open) => !open && setSelectedReport(null)}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Current Checkouts</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <CurrentCheckoutsReport includePending />
           </div>
         </DialogContent>
       </Dialog>

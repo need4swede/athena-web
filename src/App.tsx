@@ -13,6 +13,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import CheckinPage from "./pages/CheckinPage";
 import ReportsPage from "./pages/ReportsPage";
 import TransactionReportPage from "./pages/TransactionReportPage";
+import CurrentCheckoutsReportPage from "./pages/CurrentCheckoutsReportPage";
 import MaintenancePage from "./pages/MaintenancePage";
 import ChromebooksPage from "./pages/ChromebooksPage";
 import OrgUnitsPage from "./pages/OrgUnitsPage";
@@ -76,6 +77,7 @@ function AppRouter() {
       <Route path="/checkin" element={<CheckinPage />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/reports/transactions" element={<TransactionReportPage />} />
+      <Route path="/reports/current-checkouts" element={<CurrentCheckoutsReportPage />} />
       <Route path="/maintenance" element={<MaintenancePage />} />
       <Route path="/chromebooks" element={<ChromebooksPage />} />
       <Route path="/org-units" element={isSuperAdmin ? <OrgUnitsPage /> : <NotFound />} />

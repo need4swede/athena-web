@@ -34,8 +34,8 @@ const ReportsPage: React.FC = () => {
       title: 'Current Checkouts',
       description: 'List of all checked out devices',
       icon: List,
-      path: '#',
-      status: 'unavailable'
+      path: '/reports/current-checkouts',
+      status: 'available'
     },
     {
       id: 'usage',
