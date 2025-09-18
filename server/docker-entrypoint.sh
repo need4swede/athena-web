@@ -229,7 +229,7 @@ if [ "${DB_AUTO_INIT}" = "true" ]; then
   fi
 
   echo "🐘 [DB] Waiting for Postgres at $DBH:$DBP ..."
-  i=0; until pg_isready -h "$DBH" -p "$DBP" -U "$DBU" >/dev/null 2>&1; do i=$((i+1)); [ $i -gt 60 ] && echo "❌ [DB] Timed out waiting for Postgres" && break; sleep 2; done
+  i=0; until pg_isready -h "$DBH" -p "$DBP" -U "$DBU" -d "$DBN" >/dev/null 2>&1; do i=$((i+1)); [ $i -gt 60 ] && echo "❌ [DB] Timed out waiting for Postgres" && break; sleep 2; done
 
   echo "🐘 [DB] Checking if 'users' table exists..."
   EXISTS=$(psql -h "$DBH" -p "$DBP" -U "$DBU" -d "$DBN" -tAc "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='users' LIMIT 1;" 2>/dev/null || true)
