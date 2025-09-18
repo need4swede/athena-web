@@ -42,9 +42,47 @@ validateJwtSecretOrExit();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Behind reverse proxies (Caddy, Nginx), trust X-Forwarded-* headers
-// This prevents express-rate-limit from throwing on X-Forwarded-For
-app.set('trust proxy', 1);
+// Behind reverse proxies (Caddy, Heimdall, etc.), trust the forwarded chain so
+// Express resolves the actual client IP when rate limiting and logging.
+app.set('trust proxy', true);
+
+const getClientIp = (req: express.Request): string => {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.trim().length > 0) {
+        return forwarded.split(',')[0].trim();
+    }
+    if (Array.isArray(forwarded) && forwarded.length > 0) {
+        const first = forwarded[0];
+        if (first) return first.trim();
+    }
+
+    const cfConnectingIp = req.headers['cf-connecting-ip'];
+    if (typeof cfConnectingIp === 'string' && cfConnectingIp.trim().length > 0) {
+        return cfConnectingIp.trim();
+    }
+
+    const realIp = req.headers['x-real-ip'];
+    if (typeof realIp === 'string' && realIp.trim().length > 0) {
+        return realIp.trim();
+    }
+
+    if (typeof req.ip === 'string' && req.ip.trim().length > 0) {
+        return req.ip.trim();
+    }
+
+    const socketAddress = req.socket?.remoteAddress;
+    if (typeof socketAddress === 'string' && socketAddress.trim().length > 0) {
+        return socketAddress.trim();
+    }
+
+    // Fallback for older Node typings where connection may be present
+    const connectionAddress = (req as any)?.connection?.remoteAddress;
+    if (typeof connectionAddress === 'string' && connectionAddress.trim().length > 0) {
+        return connectionAddress.trim();
+    }
+
+    return 'unknown';
+};
 
 // Security middleware
 app.use(helmet({
@@ -64,6 +102,7 @@ const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // limit each IP to 1000 requests per windowMs (increased for development)
     message: 'Too many requests from this IP, please try again later.',
+    keyGenerator: getClientIp,
 });
 app.use(limiter);
 
@@ -115,8 +154,20 @@ app.use('/files', (req, res, next) => {
 }, express.static('files'));
 
 // Apply stricter rate limits to sensitive endpoints
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
-const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: getClientIp,
+});
+const adminLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: getClientIp,
+});
 
 // Debug middleware to log all requests (disabled in production)
 if ((process.env.NODE_ENV || 'development') !== 'production') {
