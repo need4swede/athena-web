@@ -118,35 +118,58 @@ class SSOConfigService {
      */
     public checkAccessControl(email: string): boolean {
         const config = this.getConfig();
-        const accessControl = config.accessControl;
+        const accessControl = config.accessControl || {};
 
         if (!email || !email.includes('@')) {
             return false;
         }
 
+        const normaliseList = (value: unknown): string[] => {
+            if (!value) {
+                return [];
+            }
+            if (Array.isArray(value)) {
+                return value
+                    .map(item => typeof item === 'string' ? item.toLowerCase().trim() : '')
+                    .filter(item => item.length > 0);
+            }
+            if (typeof value === 'string') {
+                return this.parseCommaSeparatedList(value);
+            }
+            return [];
+        };
+
+        const emailMode = typeof accessControl.emailMode === 'string'
+            ? accessControl.emailMode.toLowerCase()
+            : 'allow-all';
+        const domainMode = typeof accessControl.domainMode === 'string'
+            ? accessControl.domainMode.toLowerCase()
+            : 'allow-all';
+
         email = email.toLowerCase().trim();
         const domain = email.split('@')[1];
 
-        // Get allowed domains and emails
-        const allowedDomains = typeof accessControl.allowedDomains === 'string'
-            ? this.parseCommaSeparatedList(accessControl.allowedDomains)
-            : accessControl.allowedDomains || [];
+        const allowedEmails = normaliseList(accessControl.allowedEmails);
+        const blockedEmails = normaliseList((accessControl as any).blockedEmails);
+        const allowedDomains = normaliseList(accessControl.allowedDomains);
+        const blockedDomains = normaliseList((accessControl as any).blockedDomains);
 
-        const allowedEmails = typeof accessControl.allowedEmails === 'string'
-            ? this.parseCommaSeparatedList(accessControl.allowedEmails)
-            : accessControl.allowedEmails || [];
+        if (blockedEmails.includes(email) || blockedDomains.includes(domain)) {
+            return false;
+        }
 
-        // Priority 1: If specific emails are configured, only those are allowed
-        if (allowedEmails.length > 0) {
+        if (emailMode === 'whitelist') {
             return allowedEmails.includes(email);
         }
 
-        // Priority 2: If no specific emails but domains are configured, check domain
-        if (allowedDomains.length > 0) {
+        if (allowedEmails.includes(email)) {
+            return true;
+        }
+
+        if (domainMode === 'whitelist') {
             return allowedDomains.includes(domain);
         }
 
-        // Priority 3: If neither are configured, allow all
         return true;
     }
 
