@@ -25,7 +25,7 @@
         "loginTitle": "Athena",
         "loginSubtitle": "Asset & Directory Service for Education",
         "customCss": ".h-16 { height: 8rem !important; } .shadow-xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; }",
-        "footer": "Secured via TinyAuth SSO"
+        "footer": "Secured via Heimdall SSO"
     },
     "features": {
         "enableEmailLogin": false,

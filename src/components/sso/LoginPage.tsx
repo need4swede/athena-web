@@ -118,7 +118,7 @@ export function LoginPage() {
                   className="w-full h-12 font-medium"
                   disabled={isLoading}
                 >
-                  Retry TinyAuth login
+                  Retry Login
                 </Button>
                 <Button
                   onClick={() => window.location.reload()}
